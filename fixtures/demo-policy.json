@@ -1,0 +1,8 @@
+{
+  "showExactAddress": false,
+  "priceVisibility": "range",
+  "priceRangePct": 0.1,
+  "visitSlots": ["2026-11-10 10:00", "2026-11-10 12:00", "2026-11-11 18:00"],
+  "allowAnonymousAgents": true,
+  "maxQuestionsPerHour": 60
+}

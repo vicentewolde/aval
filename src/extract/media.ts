@@ -52,7 +52,7 @@ export async function normalize(input: string, output: string): Promise<VideoInf
     "-i",
     input,
     "-vf",
-    `fps=${SAMPLE_FPS},scale=-2:720`,
+    `fps=${SAMPLE_FPS},scale=w='if(gt(iw,ih),-2,720)':h='if(gt(iw,ih),720,-2)'`,
     "-c:v",
     "libx264",
     "-pix_fmt",

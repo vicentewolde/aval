@@ -44,6 +44,13 @@ buyer agent ──MCP──> gateway: identity (signed) -> policy -> answer from
 Least privilege by construction: the answering model is only shown the claims the seller's policy
 allows for that caller, so even a successful prompt injection has nothing forbidden to leak.
 
+## Demo data
+
+`fixtures/` holds an **invented** listing (fictional address and price) that matches the demo footage.
+The footage is a montage of four free stock clips (Pexels License: free to use, no attribution
+required; main clip by Wilfred Panakkal), rebuilt by `scripts/make-demo-video.sh`. It is not one real
+property; it exists so the pipeline can be shown on rights-clear media.
+
 ## Spend safety
 
 The Meta Model API has no hard spending cap (only alerts), so Aval enforces its own: every paid call

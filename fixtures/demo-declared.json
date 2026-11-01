@@ -1,0 +1,11 @@
+{
+  "title": "Departamento 2 dormitorios, Nunoa (demo)",
+  "operation": "sale",
+  "commune": "Nunoa",
+  "address": "Av. Irarrazaval 3550, depto 1204 (fictional)",
+  "price": { "amount": 5250, "currency": "UF" },
+  "area_m2": 62,
+  "bedrooms": 2,
+  "bathrooms": 1,
+  "pets_allowed": true
+}
