@@ -1,0 +1,30 @@
+{
+  "name": "aval",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Aval: verified-listing registry and agent gateway. Facts with evidence, served to AI agents under the seller's rules.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "aval": "node src/cli.ts",
+    "check": "biome check . && tsc --noEmit && vitest run",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@meta-sam/parser": "^0.1.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.4",
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.aval/
+media/
+out/
+*.log
+.DS_Store
