@@ -68,8 +68,11 @@ const stem = (w: string): string => (w.length > 4 ? w.replace(/(ies|es|s|ed|ing)
  */
 export function ungroundedTerms(sentence: string, cited: VisibleFact[]): string[] {
   const allowed = new Set<string>();
+  // The model is shown each fact's source line too ("seen in the walkthrough video at 7.2s (32 frames)"),
+  // which the gateway itself wrote, so its words and numbers are legitimate to repeat.
   for (const f of cited)
-    for (const w of words(f.statement)) allowed.add(/^\d+$/.test(w) ? w : stem(w));
+    for (const w of words(`${f.statement} ${f.evidence}`))
+      allowed.add(/^\d+$/.test(w) ? w : stem(w));
   const bad: string[] = [];
   for (const w of words(sentence)) {
     if (/^\d+$/.test(w)) {

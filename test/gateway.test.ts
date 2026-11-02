@@ -309,6 +309,25 @@ describe("answerQuestion: red-team against a fully compromised model", () => {
     ).toBeNull();
   });
 
+  it("lets the model repeat the source line the gateway wrote (times, frame counts), but nothing invented", () => {
+    // Found by the real-model red-team: a correct answer was dropped because "7.2s" is in the evidence line,
+    // not in the statement, which made the gateway refuse a true, cited sentence.
+    const fact = {
+      id: "c3",
+      statement: "Light grey sectional sofa with cushions",
+      provenance: "visually_verified" as const,
+      evidence: "seen in the walkthrough video at 7.2s (32 frames)",
+    };
+    expect(
+      ungroundedTerms("A light grey sectional sofa was seen in the walkthrough video at 7.2s.", [
+        fact,
+      ]),
+    ).toEqual([]);
+    expect(ungroundedTerms("The sofa was seen at 9.9s and is brand new.", [fact])).toEqual(
+      expect.arrayContaining(["99", "brand", "new"]),
+    );
+  });
+
   it("keeps the good sentences and drops only the bad one", async () => {
     const r = await ask(
       say([
