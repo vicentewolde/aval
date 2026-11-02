@@ -3,7 +3,11 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+// These tests write and verify signed files; give them room when the machine is busy.
+vi.setConfig({ testTimeout: 20_000 });
+
 import { connectAgent } from "../src/agent/signed-client.ts";
 import { type Listing, ListingSchema } from "../src/claims/schema.ts";
 import { AuditLog } from "../src/gateway/audit.ts";

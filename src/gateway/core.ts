@@ -1,4 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { publicSummary, type TitleReview, verifyReviewHash } from "../diligence/review.ts";
 import type { Action } from "../negotiation/engine.ts";
 import type { NegotiationService } from "../negotiation/service.ts";
 import type { Store } from "../store.ts";
@@ -14,6 +17,10 @@ import {
   visibleFacts,
 } from "./policy.ts";
 import { type Criteria, searchListings } from "./search.ts";
+
+export type TitleReviewView =
+  | ReturnType<typeof publicSummary>
+  | { status: "not_reviewed"; note: string };
 
 export type Outcome<T> = ({ ok: true } & T) | { ok: false; code: string; message: string };
 
@@ -209,6 +216,34 @@ export class GatewayCore {
             "Only verified or broker-declared facts are stated; each answer cites its facts.",
         },
       };
+    });
+  }
+
+  /**
+   * What the document review found, without names, RUTs, quotes or amounts (those stay with the seller).
+   * Only the status and the rule names that fired; the hash ties it to the full review the seller holds.
+   * A listing with no review says so: "not reviewed" is never presented as "clear".
+   */
+  getTitleReview(caller: Caller, listingId: string) {
+    return this.guarded<TitleReviewView>(caller, "get_title_review", listingId, async () => {
+      this.require(listingId, caller);
+      const path = join(this.deps.store.listingDir(listingId), "title-review.json");
+      if (!existsSync(path))
+        return {
+          value: {
+            status: "not_reviewed",
+            note: "The seller has not provided documents for review.",
+          },
+        };
+      const review = JSON.parse(readFileSync(path, "utf8")) as TitleReview;
+      if (!verifyReviewHash(review))
+        return {
+          value: {
+            status: "not_reviewed",
+            note: "The stored review failed its integrity check and was not used.",
+          },
+        };
+      return { value: publicSummary(review) };
     });
   }
 

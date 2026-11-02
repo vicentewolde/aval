@@ -19,6 +19,7 @@ export const MCP_TOOLS = [
   "search_listings",
   "get_facts",
   "get_policy",
+  "get_title_review",
   "ask_listing",
   "request_visit",
   "negotiation_start",

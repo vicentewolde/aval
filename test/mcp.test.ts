@@ -112,12 +112,13 @@ const text = (r: unknown) =>
   ((r as { content: Array<{ text: string }> }).content[0] as { text: string }).text;
 
 describe("MCP gateway end to end", () => {
-  it("lists the eleven tools", async () => {
+  it("lists the twelve tools", async () => {
     const c = await connect(true);
     expect((await c.listTools()).tools.map((t) => t.name).sort()).toEqual([
       "ask_listing",
       "get_facts",
       "get_policy",
+      "get_title_review",
       "list_listings",
       "negotiation_accept",
       "negotiation_offer",

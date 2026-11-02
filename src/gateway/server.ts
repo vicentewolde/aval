@@ -180,6 +180,16 @@ function buildMcp(
     async ({ listing_id }) => asText(await core.getPolicy(who("get_policy"), listing_id)),
   );
   server.registerTool(
+    "get_title_review",
+    {
+      description:
+        "Result of the automated document review (certificates of title, encumbrances, debts) for this listing: status plus the rules that fired, never personal data. 'not_reviewed' means no documents were provided, not that they are fine. Not legal advice.",
+      inputSchema: { listing_id: listingId },
+    },
+    async ({ listing_id }) =>
+      asText(await core.getTitleReview(who("get_title_review"), listing_id)),
+  );
+  server.registerTool(
     "ask_listing",
     {
       description:

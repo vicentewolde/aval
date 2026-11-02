@@ -7,6 +7,14 @@ import { runBuyerAgent } from "./agent/buyer.ts";
 import { connectAgent } from "./agent/signed-client.ts";
 import { DEFAULT_POLICY, DeclaredSchema, PolicySchema } from "./claims/schema.ts";
 import { declaredClaims } from "./claims/verify.ts";
+import { MuseDocReader } from "./diligence/reader.ts";
+import {
+  publicSummary,
+  reviewAttachments,
+  reviewTitle,
+  type TitleReview,
+  verifyReviewHash,
+} from "./diligence/review.ts";
 import { ingestVideo, ingestVoice } from "./extract/ingest.ts";
 import { MuseProposer, SamSegmenter } from "./extract/muse.ts";
 import { MuseVoiceProposer } from "./extract/voice.ts";
@@ -78,6 +86,8 @@ const USAGE = `aval <command>
   mandate seller|buyer <listing> --principal <id> ...   what a principal authorizes an agent to do (signed)
   negotiation list|show <id>|approve <id> --as <principal>   negotiations, term sheets, human approval
   passport init|issue <id>|verify <file>|prove <file> <fact>|verify-proof <file>   signed, offline-verifiable listing record
+  diligence check <id> <pdfs…> [--seller-name "<name>" --seller-rut <rut>]   read the title documents, cross-check them (Muse Spark reads, rules decide)
+  diligence show <id> [--public]           the stored review (--public: what agents see)
   budget                                   spend so far against the ceiling
   audit-verify                             check the audit log's hash chain`;
 
@@ -108,6 +118,9 @@ async function main(): Promise<void> {
       conditions: { type: "string", default: "subject_to_title_review" },
       "valid-days": { type: "string", default: "30" },
       currency: { type: "string", default: "UF" },
+      "seller-name": { type: "string" },
+      "seller-rut": { type: "string" },
+      public: { type: "boolean", default: false },
       row: { type: "string" },
       video: { type: "string" },
       anonymous: { type: "boolean", default: false },
@@ -290,7 +303,10 @@ async function main(): Promise<void> {
         attachments: (listingId) => {
           const l = store.loadListing(listingId);
           return l && issuerForDeals
-            ? { passport_root: issuePassport(l, issuerForDeals).header.merkle_root }
+            ? {
+                passport_root: issuePassport(l, issuerForDeals).header.merkle_root,
+                ...reviewAttachments(store.listingDir(listingId)),
+              }
             : {};
         },
       });
@@ -573,7 +589,10 @@ async function main(): Promise<void> {
       } else if (sub === "issue") {
         const l = a ? store.loadListing(a) : null;
         if (!a || !l) throw new Error("passport issue needs an existing listing id");
-        const p = issuePassport(l, issuer(), { listingDir: store.listingDir(a) });
+        const p = issuePassport(l, issuer(), {
+          listingDir: store.listingDir(a),
+          attachments: reviewAttachments(store.listingDir(a)),
+        });
         const out = join(store.listingDir(a), "passport.json");
         writeFileSync(out, `${JSON.stringify(p, null, 2)}\n`);
         console.log(
@@ -604,6 +623,63 @@ async function main(): Promise<void> {
           "passport init | issue <id> | verify <file> | prove <file> <fact-id> | verify-proof <file>",
         );
       }
+      return;
+    }
+    case "diligence": {
+      const [sub, id, ...files] = positionals;
+      const l = id ? store.loadListing(id) : null;
+      if (!sub || !id || !l) throw new Error("diligence check <id> <pdfs…> | show <id> [--public]");
+      const dir = store.listingDir(id);
+      const reviewPath = join(dir, "title-review.json");
+      if (sub === "show") {
+        if (!existsSync(reviewPath)) throw new Error("no review yet: run `diligence check` first");
+        const r = JSON.parse(readFileSync(reviewPath, "utf8")) as TitleReview;
+        if (!verifyReviewHash(r)) throw new Error("the stored review failed its integrity check");
+        if (values.public) {
+          console.log(JSON.stringify(publicSummary(r), null, 2));
+          return;
+        }
+        console.log(
+          `${r.status.toUpperCase()}  (${r.documents.length} documents, review ${r.hash.slice(0, 16)}...)`,
+        );
+        for (const f of r.findings) {
+          const tag =
+            f.severity === "blocker" ? "BLOCKER" : f.severity === "warning" ? "warning" : "ok     ";
+          console.log(`  ${tag}  ${f.rule}: ${f.message}`);
+          for (const e of f.evidence.slice(0, 2))
+            console.log(`           ${e.doc_type} p.${e.page}: "${e.quote}"`);
+        }
+        console.log(`\n${r.disclaimer}`);
+        return;
+      }
+      if (sub !== "check" || files.length === 0) throw new Error("diligence check <id> <pdfs…>");
+      const sellerPath = join(dir, "seller.json");
+      if (values["seller-name"] && values["seller-rut"]) {
+        writeFileSync(
+          sellerPath,
+          `${JSON.stringify({ legal_name: values["seller-name"], rut: values["seller-rut"] })}\n`,
+          { mode: 0o600 },
+        );
+      }
+      if (!existsSync(sellerPath))
+        throw new Error(
+          "who is the seller? pass --seller-name and --seller-rut once (kept private, never served)",
+        );
+      const seller = JSON.parse(readFileSync(sellerPath, "utf8")) as {
+        legal_name: string;
+        rut: string;
+      };
+      const r = await reviewTitle({
+        listing: l,
+        seller,
+        files,
+        reader: new MuseDocReader(client(guard)),
+        now: new Date(),
+      });
+      writeFileSync(reviewPath, `${JSON.stringify(r, null, 2)}\n`);
+      console.log(
+        `${reviewPath}\nstatus: ${r.status}  (run \`diligence show ${id}\` for the findings)`,
+      );
       return;
     }
     case "budget":
