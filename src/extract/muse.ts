@@ -49,7 +49,7 @@ export class MuseProposer implements Proposer {
           name: "claim_proposals",
           schema: z.toJSONSchema(ProposalListSchema) as Record<string, unknown>,
         },
-        maxOutputTokens: 3000,
+        maxOutputTokens: 6000,
         reasoningEffort: "low",
         // Video token counts are not documented; assume a generous 6k tokens per second so the guard stays safe.
         estInputTokens: Math.ceil(durationSec * 6000) + 1000,

@@ -30,7 +30,7 @@ const r = await client.respond({
       properties: { ok: { type: "boolean" }, word: { type: "string" } },
     },
   },
-  maxOutputTokens: 64,
+  maxOutputTokens: 800,
   reasoningEffort: "low",
   estInputTokens: 50,
   label: "smoke:text",

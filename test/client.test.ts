@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { MetaApiError, MetaClient, sseTextDeltas } from "../src/meta/client.ts";
+import {
+  IncompleteResponseError,
+  MetaApiError,
+  MetaClient,
+  sseTextDeltas,
+} from "../src/meta/client.ts";
 import { BudgetExceededError, SpendGuard } from "../src/spend.ts";
 
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -54,6 +59,22 @@ describe("MetaClient.respond", () => {
       }),
     );
     expect((await c.respond(ask)).text).toBe("ab");
+  });
+
+  it("fails loudly when reasoning ate the whole output budget and no text came back", async () => {
+    const { c } = client(async () =>
+      json({
+        status: "incomplete",
+        incomplete_details: { reason: "max_output_tokens" },
+        output: [{ type: "reasoning" }],
+        usage: { input_tokens: 25, output_tokens: 64 },
+      }),
+    );
+    await expect(c.respond(ask)).rejects.toBeInstanceOf(IncompleteResponseError);
+    const { c: c2 } = client(async () =>
+      json({ status: "completed", output: [], usage: { input_tokens: 1, output_tokens: 1 } }),
+    );
+    await expect(c2.respond(ask)).rejects.toThrow(/Raise maxOutputTokens/);
   });
 
   it("retries 429 and 5xx, then succeeds", async () => {
@@ -137,6 +158,17 @@ describe("SAM over server-sent events", () => {
     });
     expect(r.frames.map((f) => f.frame)).toEqual([0, 2]);
     expect(guard.spentUsd).toBeCloseTo(0.1, 8);
+  });
+
+  it("asks for confidence through metadata, as the SAM docs specify", async () => {
+    let body: Record<string, unknown> = {};
+    const { c } = client(async (_u, init) => {
+      body = JSON.parse(String(init?.body));
+      return sse(["data: [DONE]"]);
+    });
+    await c.segmentVideo({ concept: "sofa", fileId: "f", frames: 10, label: "x" });
+    expect(body.metadata).toEqual({ include_confidence: "true" });
+    expect(body.include_confidence).toBeUndefined();
   });
 
   it("treats an empty stream as zero matches", async () => {

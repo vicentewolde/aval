@@ -37,7 +37,7 @@ export class MuseAnswerModel implements AnswerModel {
         name: "listing_answer",
         schema: z.toJSONSchema(AnswerSchema) as Record<string, unknown>,
       },
-      maxOutputTokens: 600,
+      maxOutputTokens: 2000,
       reasoningEffort: "low",
       estInputTokens: Math.ceil(prompt.length / 3) + 400,
       label: "ask",

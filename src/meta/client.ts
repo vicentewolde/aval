@@ -24,6 +24,16 @@ export class MetaApiError extends Error {
   }
 }
 
+export class IncompleteResponseError extends Error {
+  readonly reason: string;
+  constructor(reason: string, outputTokens: number, maxOutputTokens: number) {
+    super(
+      `Model returned no usable text (${reason}; used ${outputTokens} of ${maxOutputTokens} output tokens, reasoning included). Raise maxOutputTokens.`,
+    );
+    this.reason = reason;
+  }
+}
+
 export interface MetaClientOptions {
   apiKey: string;
   guard: SpendGuard;
@@ -152,7 +162,17 @@ export class MetaClient {
     };
     const costUsd = tokenCostUsd(o.model, usage);
     this.opts.guard.record(costUsd, o.label, json.usage === undefined);
-    return { text: extractText(json), usage, costUsd };
+    const text = extractText(json);
+    if (json.status === "incomplete" || text.trim() === "") {
+      // Reasoning tokens count against max_output_tokens (about 200-600 even at effort "low"), so a small
+      // limit yields an empty answer. Fail loudly instead of returning "" as if it were a result.
+      throw new IncompleteResponseError(
+        json.incomplete_details?.reason ?? "empty output",
+        usage.output_tokens,
+        o.maxOutputTokens,
+      );
+    }
+    return { text, usage, costUsd };
   }
 
   /**
@@ -182,7 +202,7 @@ export class MetaClient {
       ],
       stream: true,
     };
-    if (args.includeConfidence !== false) body.include_confidence = "true";
+    if (args.includeConfidence !== false) body.metadata = { include_confidence: "true" };
     const res = await this.send(`${this.baseUrl}/responses`, {
       method: "POST",
       headers: this.headers({ "content-type": "application/json", accept: "text/event-stream" }),
@@ -199,6 +219,8 @@ export class MetaClient {
 }
 
 interface ResponsesBody {
+  status?: string;
+  incomplete_details?: { reason?: string } | null;
   output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }>;
   output_text?: string;
   usage?: Usage;
