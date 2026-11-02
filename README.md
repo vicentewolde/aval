@@ -6,10 +6,16 @@ through a gateway that only says what is proven, only to agents that identify th
 within the rules the seller set. Built for the Meta Global AI Developer Hackathon (Meta Model API:
 Muse Spark + SAM 3.1 + Muse Voice Transcribe).
 
-> **Status: work in progress during the hackathon (submission 2026-11-04).** This repository was
-> created on 2026-11-01, inside the hackathon window, and contains no code copied from any earlier
-> project. Everything here is new work. It is designed to take listings from other sources later
-> (the author's separate product, AgentSales, is one planned source) through a plain JSON interface.
+> **Built during the hackathon (submission 2026-11-04).** This repository was created on 2026-11-01,
+> inside the hackathon window, and contains no code copied from any earlier project: everything here
+> is new work, and the git history shows when each piece appeared. It takes listings from other
+> sources through plain JSON (the author's separate, earlier broker tool, AgentSales, is the first
+> adapter, `src/adapters/agentsales.ts`).
+>
+> **Built and tested:** video evidence (Muse Spark + SAM 3.1), voice notes (Muse Voice Transcribe),
+> signed-agent MCP gateway, search across listings, public pages with schema.org data, a buyer agent
+> on Muse Spark function calling, and two red-teams. **Not built (roadmap):** a hosted marketplace,
+> buyer matching at scale, land for developers.
 
 ## The rule
 
@@ -52,10 +58,14 @@ allows for that caller, so even a successful prompt injection has nothing forbid
 
 ## Demo data
 
-`fixtures/` holds an **invented** listing (fictional address and price) that matches the demo footage.
-The footage is a montage of four free stock clips (Pexels License: free to use, no attribution
-required; main clip by Wilfred Panakkal), rebuilt by `scripts/make-demo-video.sh`. It is not one real
-property; it exists so the pipeline can be shown on rights-clear media.
+`fixtures/` holds four **invented** listings (fictional addresses and prices) with the real results of
+running the pipeline on demo footage: `fixtures/listings/*.json`. The footage is montages of twelve free
+stock clips (Pexels License: free to use, no attribution required; main clip by Wilfred Panakkal),
+rebuilt by `scripts/make-demo-video.sh` and `scripts/make-more-demo-videos.sh`. None of them is one
+real property; they exist so the pipeline can be shown on rights-clear media (a montage can show two
+dining tables, as a real flat would not). The Spanish voice note is synthetic (macOS text-to-speech,
+`scripts/make-voice-note.sh`) and includes an invented secret on purpose. The AgentSales rows in
+`fixtures/` are invented too.
 
 ## Search across listings (the seed of a marketplace for agents)
 
