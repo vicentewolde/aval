@@ -277,6 +277,38 @@ describe("answerQuestion: red-team against a fully compromised model", () => {
     ).toEqual([]);
   });
 
+  it("does not let a model assert absence: negations must come from the cited facts", async () => {
+    // Found by the real-model red-team: "No, ..." answered a question whose truth the facts do not settle.
+    for (const text of [
+      "No, the kitchen has an island.",
+      "The kitchen does not have an island.",
+      "It has an island without a sink.",
+      "Nothing else, never.",
+    ]) {
+      const r = await ask(say([{ text, claim_ids: ["v-island"] }]), "island?");
+      expect(r.refused, text).toBe("NO_VERIFIED_FACT");
+      expect(r.flags).toContain("ungrounded-claim-dropped");
+    }
+    expect(
+      ungroundedTerms("Pets are not allowed.", [
+        {
+          id: "d-pets",
+          statement: "Pets not allowed",
+          provenance: "broker_declared",
+          evidence: "",
+        },
+      ]),
+    ).toEqual([]);
+    expect(
+      (
+        await ask(
+          say([{ text: "Yes, the kitchen has an island.", claim_ids: ["v-island"] }]),
+          "island?",
+        )
+      ).refused,
+    ).toBeNull();
+  });
+
   it("keeps the good sentences and drops only the bad one", async () => {
     const r = await ask(
       say([
