@@ -138,6 +138,56 @@ function sse(lines: string[]): Response {
   );
 }
 
+describe("MetaClient.respondTools", () => {
+  const tools: never[] = [];
+  const turn = {
+    model: "muse-spark-1.3" as const,
+    input: "x",
+    tools,
+    maxOutputTokens: 100,
+    estInputTokens: 10,
+    label: "t",
+  };
+
+  it("returns function calls and text", async () => {
+    const { c } = client(async () =>
+      json({
+        id: "r1",
+        output: [
+          {
+            type: "function_call",
+            name: "get_facts",
+            arguments: '{"listing_id":"a"}',
+            call_id: "c1",
+          },
+        ],
+        usage: { input_tokens: 5, output_tokens: 5 },
+      }),
+    );
+    const r = await c.respondTools(turn);
+    expect(r.calls).toEqual([{ name: "get_facts", arguments: '{"listing_id":"a"}', callId: "c1" }]);
+    expect(r.id).toBe("r1");
+  });
+
+  it("retries the race where the previous response is not stored yet, but only that 400", async () => {
+    let n = 0;
+    const { c } = client(async () =>
+      ++n < 3
+        ? json({ error: { message: "referenced response not found or expired" } }, 400)
+        : json({ id: "r2", output_text: "ok", usage: { input_tokens: 1, output_tokens: 1 } }),
+    );
+    expect((await c.respondTools({ ...turn, previousResponseId: "r1" })).text).toBe("ok");
+    expect(n).toBe(3);
+    let m = 0;
+    const { c: c2 } = client(async () => {
+      m++;
+      return json({ error: { message: "something else" } }, 400);
+    });
+    await expect(c2.respondTools(turn)).rejects.toBeInstanceOf(MetaApiError);
+    expect(m).toBe(1);
+  });
+});
+
 describe("SAM over server-sent events", () => {
   it("collects one frame per delta and bills per frame", async () => {
     const f1 = "<0f>1<|box;x1=1;y1=1;x2=50;y2=50;w=100;h=100;c=0.9|>";

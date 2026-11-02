@@ -130,7 +130,9 @@ describe("MCP gateway end to end", () => {
       text(await c.callTool({ name: "get_facts", arguments: { listing_id: "demo-1" } })),
     ) as Array<{ id: string; statement: string }>;
     expect(facts.find((f) => f.id === "d-address")).toBeUndefined();
-    expect(facts.find((f) => f.id === "d-price")?.statement).toContain("range set by the seller");
+    expect(facts.find((f) => f.id === "d-price")?.statement).toContain(
+      "approximate range set by the seller",
+    );
     await c.close();
   });
 

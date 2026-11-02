@@ -92,7 +92,7 @@ describe("policy: what an agent may see", () => {
     const facts = visibleFacts(makeListing(), caller);
     expect(facts.find((f) => f.id === "d-address")).toBeUndefined();
     expect(facts.find((f) => f.id === "d-price")?.statement).toBe(
-      "Price between UF 5220 and UF 6380 (range set by the seller)",
+      `Price between UF ${priceRange(5800, "UF", 0.1, "demo-1")[0]} and UF ${priceRange(5800, "UF", 0.1, "demo-1")[1]} (approximate range set by the seller)`,
     );
   });
 
@@ -115,7 +115,24 @@ describe("policy: what an agent may see", () => {
   });
 
   it("rounds CLP ranges to 10,000", () => {
-    expect(priceRange(450_000, "CLP", 0.1)).toEqual([410_000, 500_000]);
+    const [lo, hi] = priceRange(450_000, "CLP", 0.1, "x");
+    expect(lo % 10_000).toBe(0);
+    expect(hi % 10_000).toBe(0);
+    expect(lo).toBeLessThan(450_000);
+    expect(hi).toBeGreaterThan(450_000);
+  });
+
+  it("never centers the range on the real price, so the midpoint reveals nothing", () => {
+    for (let i = 0; i < 300; i++) {
+      const amount = 1000 + i * 37;
+      const [lo, hi] = priceRange(amount, "UF", 0.1, `listing-${i}`);
+      expect(lo).toBeLessThan(amount);
+      expect(hi).toBeGreaterThan(amount);
+      expect(Math.abs((lo + hi) / 2 - amount)).toBeGreaterThan(amount * 0.005);
+      expect(hi / amount).toBeLessThan(1.2);
+      expect(lo / amount).toBeGreaterThan(0.85);
+    }
+    expect(priceRange(5250, "UF", 0.1, "demo-1")).toEqual(priceRange(5250, "UF", 0.1, "demo-1"));
   });
 
   it("turns away anonymous agents when the seller requires identity", () => {

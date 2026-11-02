@@ -126,7 +126,7 @@ export class GatewayCore {
           exact_address: p.showExactAddress ? "shared" : "withheld by the seller",
           price:
             p.priceVisibility === "range"
-              ? `shown as a ±${Math.round(p.priceRangePct * 100)}% range`
+              ? `shown as an approximate range (about ${Math.round(p.priceRangePct * 100)}% either way, not centered on the price)`
               : p.priceVisibility,
           visits:
             p.visitSlots.length > 0

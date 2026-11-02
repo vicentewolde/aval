@@ -118,6 +118,25 @@ export class MetaClient {
     }
   }
 
+  /**
+   * A chained request (previous_response_id) can race the storage of the previous response and get a
+   * 400 "referenced response not found or expired" right after it was created. Retry that one case.
+   */
+  private async sendChained(url: string, init: RequestInit): Promise<Response> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await this.send(url, init);
+      } catch (err) {
+        const raceLost =
+          err instanceof MetaApiError &&
+          err.status === 400 &&
+          err.body.includes("referenced response not found");
+        if (!raceLost || attempt >= 3) throw err;
+        await this.sleep(1500 * (attempt + 1));
+      }
+    }
+  }
+
   async uploadFile(path: string, expiresSeconds = 24 * 3600): Promise<string> {
     const form = new FormData();
     form.set("purpose", "user_data");
@@ -214,7 +233,7 @@ export class MetaClient {
     };
     if (o.instructions) body.instructions = o.instructions;
     if (o.previousResponseId) body.previous_response_id = o.previousResponseId;
-    const res = await this.send(`${this.baseUrl}/responses`, {
+    const res = await this.sendChained(`${this.baseUrl}/responses`, {
       method: "POST",
       headers: this.headers({ "content-type": "application/json" }),
       body: JSON.stringify(body),

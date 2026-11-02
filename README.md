@@ -41,6 +41,8 @@ buyer agent ──MCP──> gateway: identity (signed) -> policy -> answer from
                        tamper-evident audit log, visit requests that need a human
 ```
 
+The price range is deliberately **asymmetric** (found by the red-team: a symmetric range lets anyone compute the exact price as the midpoint).
+
 Least privilege by construction: the answering model is only shown the claims the seller's policy
 allows for that caller, so even a successful prompt injection has nothing forbidden to leak.
 
@@ -50,6 +52,18 @@ allows for that caller, so even a successful prompt injection has nothing forbid
 The footage is a montage of four free stock clips (Pexels License: free to use, no attribution
 required; main clip by Wilfred Panakkal), rebuilt by `scripts/make-demo-video.sh`. It is not one real
 property; it exists so the pipeline can be shown on rights-clear media.
+
+## Red-team result (real model, 42 attack trials)
+
+| System | Violations |
+|---|---|
+| Typical listing chatbot given the whole record | **38 / 42** |
+| Aval model layer only (least privilege + hardened prompt) | 3 / 42 (all three are negations flagged by a string judge) |
+| **Aval full gateway** | **0 / 42** |
+
+Benign questions are still answered (0 / 6 missed). Details, every attack and the honest limits:
+[docs/redteam.md](docs/redteam.md). A buyer agent built on Muse Spark function calling, run over the
+real gateway: [docs/buyer-demo.md](docs/buyer-demo.md).
 
 ## Spend safety
 

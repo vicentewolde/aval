@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { ASSERTABLE, type Claim, type Listing, type Policy } from "../claims/schema.ts";
 
 export type Tier = "verified" | "anonymous";
@@ -27,9 +28,32 @@ function roundTo(n: number, step: number): number {
   return Math.round(n / step) * step;
 }
 
-export function priceRange(amount: number, currency: "UF" | "CLP", pct: number): [number, number] {
+/** Stable pseudo-random number in [0.5, 1.5) from a seed (the listing id), so ranges do not change between calls. */
+function jitter(seed: string): number {
+  const h = createHash("sha256").update(seed).digest();
+  return 0.5 + h.readUInt16BE(0) / 65536;
+}
+
+/**
+ * An approximate price range that contains the real price but is deliberately NOT centered on it.
+ * A symmetric range leaks the exact price to anyone who asks for the midpoint (the red-team found
+ * exactly that attack), so each side gets its own listing-specific width.
+ */
+export function priceRange(
+  amount: number,
+  currency: "UF" | "CLP",
+  pct: number,
+  seed: string,
+): [number, number] {
   const step = currency === "UF" ? 1 : 10_000;
-  return [roundTo(amount * (1 - pct), step), roundTo(amount * (1 + pct), step)];
+  const down = pct * jitter(`${seed}:lo`);
+  let up = pct * jitter(`${seed}:hi`);
+  if (Math.abs(up - down) < pct * 0.25) up = down + pct * 0.35;
+  const lo = roundTo(amount * (1 - down), step);
+  let hi = roundTo(amount * (1 + up), step);
+  if (Math.abs((lo + hi) / 2 - amount) < amount * 0.01)
+    hi = roundTo(amount * (1 + up + 0.03), step);
+  return [Math.min(lo, amount - step), Math.max(hi, amount + step)];
 }
 
 function evidenceText(c: Claim): string {
@@ -57,8 +81,13 @@ export function visibleFacts(listing: Listing, caller: Caller): VisibleFact[] {
       if (p.priceVisibility === "range") {
         const m = /^Price (UF|CLP) ([\d.]+)$/.exec(c.statement);
         if (!m) continue;
-        const [lo, hi] = priceRange(Number(m[2]), m[1] as "UF" | "CLP", p.priceRangePct);
-        statement = `Price between ${m[1]} ${lo} and ${m[1]} ${hi} (range set by the seller)`;
+        const [lo, hi] = priceRange(
+          Number(m[2]),
+          m[1] as "UF" | "CLP",
+          p.priceRangePct,
+          listing.id,
+        );
+        statement = `Price between ${m[1]} ${lo} and ${m[1]} ${hi} (approximate range set by the seller)`;
       }
     }
     out.push({

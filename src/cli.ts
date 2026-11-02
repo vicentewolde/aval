@@ -2,6 +2,8 @@ import { generateKeyPairSync } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
+import { runBuyerAgent } from "./agent/buyer.ts";
+import { connectAgent } from "./agent/signed-client.ts";
 import { DEFAULT_POLICY, DeclaredSchema, PolicySchema } from "./claims/schema.ts";
 import { ingestVideo } from "./extract/ingest.ts";
 import { MuseProposer, SamSegmenter } from "./extract/muse.ts";
@@ -44,6 +46,7 @@ const USAGE = `aval <command>
   visits [approve|decline <visit-id>]      visit requests from agents (a human decides)
   edit <listing> <claim> "<new wording>"   broker correction (feeds the taste module)
   taste                                    what the corrections taught, and eval cases
+  buyer "<goal>" [--as <agent-id>|--anonymous] [--url <mcp-url>]   a Muse Spark buyer agent using the gateway
   budget                                   spend so far against the ceiling
   audit-verify                             check the audit log's hash chain`;
 
@@ -62,6 +65,9 @@ async function main(): Promise<void> {
       broker: { type: "string", default: "broker-1" },
       port: { type: "string", default: "8787" },
       offline: { type: "boolean", default: false },
+      as: { type: "string" },
+      anonymous: { type: "boolean", default: false },
+      url: { type: "string", default: "http://127.0.0.1:8787/mcp" },
     },
   });
 
@@ -175,6 +181,35 @@ async function main(): Promise<void> {
       const g = styleGuide(store);
       console.log(JSON.stringify(g, null, 2));
       console.log(`eval cases: ${evalCases(store).length}`);
+      return;
+    }
+    case "buyer": {
+      const goal = positionals.join(" ");
+      if (!goal)
+        throw new Error(
+          'buyer needs a goal, e.g. buyer "Find a 2-bedroom in Nunoa that allows pets"',
+        );
+      const identity =
+        values.anonymous || !values.as
+          ? undefined
+          : {
+              agentId: values.as,
+              privateKeyPem: readFileSync(join(store.root, "keys", `${values.as}.pem`), "utf8"),
+            };
+      const mcp = await connectAgent(values.url, identity);
+      try {
+        const r = await runBuyerAgent({
+          llm: client(guard),
+          mcp,
+          goal,
+          log: (l) => console.log(l),
+        });
+        console.log(
+          `\n${r.finalText}\n\n(agent cost $${r.costUsd.toFixed(4)}; spent so far $${guard.spentUsd.toFixed(4)} of $${guard.budgetUsd})`,
+        );
+      } finally {
+        await mcp.close();
+      }
       return;
     }
     case "budget":

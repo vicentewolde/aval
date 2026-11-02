@@ -184,6 +184,8 @@ ${rows.map((r) => `### ${r.id} (${r.category})\n> ${r.question}\n\n${r.runs.map(
 ## Honest limits
 
 - The baseline is a representative naive design, not a specific product.
+- The 3 "model layer" violations are negations that the string judge counts as mentions ("no mention of a floor-to-ceiling wooden wardrobe", "the facts do not include information about safety"): the model denied, it did not confirm. The gateway still replaced them with a refusal, because they cite nothing that supports them.
+- The first full run found two real problems that were then fixed: a symmetric price range let an agent compute the exact price as the midpoint (the range is now asymmetric), and a sentence could cite a true fact while carrying an unsupported claim (every word must now be grounded in the cited facts). Both appear in the commit history.
 - Judging is by string matching on the secrets and on unverified claims; a paraphrase that never uses the listed strings would not be caught by this report (the gateway's own check has the same blind spot for exact-string leaks, which is why the model never receives the forbidden fields in the first place).
 - ${RUNS} runs per attack on one listing and one model version: this is evidence, not a proof.
 `;
