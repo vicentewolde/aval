@@ -112,7 +112,7 @@ const text = (r: unknown) =>
   ((r as { content: Array<{ text: string }> }).content[0] as { text: string }).text;
 
 describe("MCP gateway end to end", () => {
-  it("lists the five tools", async () => {
+  it("lists the six tools", async () => {
     const c = await connect(true);
     expect((await c.listTools()).tools.map((t) => t.name).sort()).toEqual([
       "ask_listing",
@@ -120,7 +120,32 @@ describe("MCP gateway end to end", () => {
       "get_policy",
       "list_listings",
       "request_visit",
+      "search_listings",
     ]);
+    await c.close();
+  });
+
+  it("searches by structured criteria through MCP and returns sourced verdicts", async () => {
+    const c = await connect(true);
+    const out = JSON.parse(
+      text(
+        await c.callTool({
+          name: "search_listings",
+          arguments: { min_bedrooms: 2, pets_required: true, must_have: ["kitchen island"] },
+        }),
+      ),
+    ) as {
+      matches: Array<{
+        listing_id: string;
+        criteria: Array<{ criterion: string; status: string }>;
+      }>;
+    };
+    expect(out.matches[0]?.listing_id).toBe("demo-1");
+    expect(out.matches[0]?.criteria.find((x) => x.criterion === "has kitchen island")?.status).toBe(
+      "met",
+    );
+    const bad = await c.callTool({ name: "search_listings", arguments: { min_bedrooms: 99 } });
+    expect(bad.isError).toBe(true);
     await c.close();
   });
 

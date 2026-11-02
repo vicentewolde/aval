@@ -1,0 +1,11 @@
+{
+  "title": "Duplex con terraza y piscina, Las Condes (demo)",
+  "operation": "sale",
+  "commune": "Las Condes",
+  "address": "Av. Apoquindo 4800, piso 20 (fictional)",
+  "price": { "amount": 14500, "currency": "UF" },
+  "area_m2": 185,
+  "bedrooms": 2,
+  "bathrooms": 3,
+  "pets_allowed": true
+}

@@ -11,6 +11,7 @@ import {
   type VisibleFact,
   visibleFacts,
 } from "./policy.ts";
+import { type Criteria, searchListings } from "./search.ts";
 
 export type Outcome<T> = ({ ok: true } & T) | { ok: false; code: string; message: string };
 
@@ -110,6 +111,15 @@ export class GatewayCore {
       });
       return { value: rows };
     });
+  }
+
+  search(caller: Caller, criteria: Criteria) {
+    return this.guarded(
+      caller,
+      "search_listings",
+      JSON.stringify(criteria).slice(0, 200),
+      async () => ({ value: searchListings(this.deps.store.listListings(), caller, criteria) }),
+    );
   }
 
   getFacts(caller: Caller, listingId: string) {

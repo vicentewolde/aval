@@ -1,0 +1,11 @@
+{
+  "title": "Loft estudio, Providencia (demo)",
+  "operation": "rent",
+  "commune": "Providencia",
+  "address": "Calle Los Leones 1020, depto 8 (fictional)",
+  "price": { "amount": 520000, "currency": "CLP" },
+  "area_m2": 38,
+  "bedrooms": 1,
+  "bathrooms": 1,
+  "pets_allowed": false
+}

@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { GatewayCore, Outcome } from "./core.ts";
 import type { AgentRegistry } from "./identity.ts";
 import type { Caller } from "./policy.ts";
+import { CriteriaSchema } from "./search.ts";
 
 const MAX_BODY = 64 * 1024;
 
@@ -54,6 +55,15 @@ function buildMcp(
         "List the listings available, with how many verified facts each has. Addresses are never included.",
     },
     async () => asText(await core.listListings(who("list_listings"))),
+  );
+  server.registerTool(
+    "search_listings",
+    {
+      description:
+        "Match a buyer's needs against all listings. Give structured criteria (operation, commune, min_bedrooms, min_bathrooms, min_area_m2, max_price, pets_required, must_have). Returns ranked matches, each criterion with the fact and source it rests on; 'unconfirmed' means there is no evidence either way. Listings that fail a hard criterion are excluded with the reason.",
+      inputSchema: CriteriaSchema.shape,
+    },
+    async (criteria) => asText(await core.search(who("search_listings"), criteria)),
   );
   server.registerTool(
     "get_facts",

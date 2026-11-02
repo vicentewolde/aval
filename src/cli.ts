@@ -13,6 +13,7 @@ import { AuditLog, verifyChain } from "./gateway/audit.ts";
 import { GatewayCore, type VisitRecord } from "./gateway/core.ts";
 import { type AgentRecord, AgentRegistry } from "./gateway/identity.ts";
 import { OfflineAnswerModel } from "./gateway/offline-model.ts";
+import { CriteriaSchema } from "./gateway/search.ts";
 import { startGateway } from "./gateway/server.ts";
 import { MetaClient } from "./meta/client.ts";
 import { renderReport } from "./report.ts";
@@ -41,6 +42,7 @@ function client(guard: SpendGuard): MetaClient {
 const USAGE = `aval <command>
 
   ingest <video> --id <id> --declared <file.json> [--policy <file.json>] [--broker <name>]
+  search '<criteria json>' [--anonymous]    match a buyer's needs against all listings (no model, no spend)
   ask <id> "<question>"                    ask the gateway directly (real Muse Spark answering)
   voice <id> <audio>                       add what the broker said in a voice note (Muse Voice Transcribe)
   report <id>                              evidence report (HTML) for a listing
@@ -104,6 +106,30 @@ async function main(): Promise<void> {
       } finally {
         await segmenter.close();
       }
+      return;
+    }
+    case "search": {
+      const [raw] = positionals;
+      if (!raw)
+        throw new Error(
+          'search needs criteria JSON, e.g. search \'{"min_bedrooms":2,"pets_required":true}\'',
+        );
+      const criteria = CriteriaSchema.parse(JSON.parse(raw));
+      const audit = new AuditLog(join(store.root, "audit.jsonl"));
+      const core = new GatewayCore({ store, model: new OfflineAnswerModel(), audit });
+      const caller = values.anonymous
+        ? { agentId: null, tier: "anonymous" as const }
+        : { agentId: "cli", tier: "verified" as const };
+      const r = await core.search(caller, criteria);
+      if (!r.ok) throw new Error(`${r.code}: ${r.message}`);
+      for (const m of r.data.matches) {
+        console.log(`\n${m.listing_id}  [${m.fit}]  score ${m.score}  ${m.title}`);
+        for (const c of m.criteria)
+          console.log(
+            `   ${c.status.padEnd(11)} ${c.criterion}${c.basis ? `   <- ${c.basis.provenance}: ${c.basis.statement}` : ""}${c.note ? `   (${c.note})` : ""}`,
+          );
+      }
+      for (const e of r.data.excluded) console.log(`\nexcluded ${e.listing_id}: ${e.reason}`);
       return;
     }
     case "ask": {

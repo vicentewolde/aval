@@ -1,0 +1,11 @@
+{
+  "title": "Casa 3 dormitorios con jardin, La Reina (demo)",
+  "operation": "sale",
+  "commune": "La Reina",
+  "address": "Pasaje Los Almendros 455 (fictional)",
+  "price": { "amount": 9800, "currency": "UF" },
+  "area_m2": 140,
+  "bedrooms": 3,
+  "bathrooms": 2,
+  "pets_allowed": true
+}
