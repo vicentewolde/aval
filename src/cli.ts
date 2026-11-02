@@ -235,7 +235,7 @@ async function main(): Promise<void> {
       const registry = AgentRegistry.fromFile(join(store.root, "agents.json"));
       const core = new GatewayCore({ store, model, audit });
       const port = Number(values.port);
-      await startGateway(core, registry, port);
+      await startGateway(core, registry, port, "127.0.0.1", store);
       console.log(
         `Aval gateway on http://127.0.0.1:${port}/mcp (${values.offline ? "offline model, no spend" : "Muse Spark"})`,
       );

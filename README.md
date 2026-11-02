@@ -67,6 +67,25 @@ fact contradicts a hard criterion. Sellers differ (one hides the price, one serv
 and the search respects each one. Try it without the API:
 `./scripts/seed-fixtures.sh && node src/cli.ts search '{"min_bedrooms":2,"pets_required":true,"max_price":{"amount":6000,"currency":"UF"},"must_have":["bathtub","parking"]}'`.
 
+## Where listings come from: AgentSales adapter
+
+`import-agentsales` reads rows in the column format of the author's separate broker tool (AgentSales:
+`dormitorios`, `acepta_mascotas`, `mostrar_direccion_exacta`...) and turns them into **declared** facts,
+searchable at once next to video-verified listings; adding a video upgrades the facts it can prove.
+No AgentSales code is imported and AgentSales needs no change: the contract is
+`src/adapters/agentsales.ts`. Its internal notes and the broker's taste words ("destacados") are
+dropped on purpose and cannot be imported (tested). `node src/cli.ts import-agentsales fixtures/agentsales-export.json`.
+
+## Public pages for agents that do not speak MCP
+
+The gateway also serves, from the same policy door as MCP (anonymous tier): `/listings` and
+`/listings.json`, one page and one JSON per listing (`/l/<id>`, `/l/<id>.json`) with schema.org
+`RealEstateListing` JSON-LD whose every feature carries its provenance, and `/.well-known/aval.json`
+describing the MCP endpoint and the request-signing scheme. A seller that serves only identified agents
+gets a 404, not a stub. Pages escape hostile content, send a Content-Security-Policy whose script hash
+matches the one inline script, and register a `get_listing_facts` tool through WebMCP
+(`navigator.modelContext`, a draft standard, feature-detected).
+
 ## Red-team result (real model, 42 attack trials)
 
 | System | Violations |

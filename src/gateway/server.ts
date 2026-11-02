@@ -2,8 +2,10 @@ import { createServer, type IncomingMessage, type Server } from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
+import type { Store } from "../store.ts";
 import type { GatewayCore, Outcome } from "./core.ts";
 import type { AgentRegistry } from "./identity.ts";
+import { handlePublicRequest } from "./pages.ts";
 import type { Caller } from "./policy.ts";
 import { CriteriaSchema } from "./search.ts";
 
@@ -115,8 +117,10 @@ export function startGateway(
   registry: AgentRegistry,
   port: number,
   host = "127.0.0.1",
+  store?: Store,
 ): Promise<Server> {
   const http = createServer(async (req, res) => {
+    if (store && handlePublicRequest(req, res, store)) return;
     if (req.url === "/healthz") {
       res.writeHead(200, { "content-type": "text/plain" }).end("ok");
       return;
