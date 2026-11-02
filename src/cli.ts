@@ -2,9 +2,11 @@ import { generateKeyPairSync } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
+import { importAgentSalesRow } from "./adapters/agentsales.ts";
 import { runBuyerAgent } from "./agent/buyer.ts";
 import { connectAgent } from "./agent/signed-client.ts";
 import { DEFAULT_POLICY, DeclaredSchema, PolicySchema } from "./claims/schema.ts";
+import { declaredClaims } from "./claims/verify.ts";
 import { ingestVideo, ingestVoice } from "./extract/ingest.ts";
 import { MuseProposer, SamSegmenter } from "./extract/muse.ts";
 import { MuseVoiceProposer } from "./extract/voice.ts";
@@ -42,6 +44,7 @@ function client(guard: SpendGuard): MetaClient {
 const USAGE = `aval <command>
 
   ingest <video> --id <id> --declared <file.json> [--policy <file.json>] [--broker <name>]
+  import-agentsales <export.json> [--row <id_propiedad> --video <mp4>]   bring in AgentSales rows (declared facts; add a video to verify them)
   search '<criteria json>' [--anonymous]    match a buyer's needs against all listings (no model, no spend)
   ask <id> "<question>"                    ask the gateway directly (real Muse Spark answering)
   voice <id> <audio>                       add what the broker said in a voice note (Muse Voice Transcribe)
@@ -71,6 +74,8 @@ async function main(): Promise<void> {
       port: { type: "string", default: "8787" },
       offline: { type: "boolean", default: false },
       as: { type: "string" },
+      row: { type: "string" },
+      video: { type: "string" },
       anonymous: { type: "boolean", default: false },
       url: { type: "string", default: "http://127.0.0.1:8787/mcp" },
     },
@@ -105,6 +110,58 @@ async function main(): Promise<void> {
         console.log(`next: node src/cli.ts report ${values.id}`);
       } finally {
         await segmenter.close();
+      }
+      return;
+    }
+    case "import-agentsales": {
+      const [file] = positionals;
+      if (!file) throw new Error("import-agentsales needs <export.json>");
+      const parsed: unknown = JSON.parse(readFileSync(file, "utf8"));
+      const rows = (Array.isArray(parsed) ? parsed : [parsed]).filter(
+        (r) => !values.row || (r as { id_propiedad?: string }).id_propiedad === values.row,
+      );
+      if (rows.length === 0) throw new Error("no matching rows");
+      if (values.video && rows.length !== 1)
+        throw new Error("--video needs exactly one row (use --row <id_propiedad>)");
+      for (const raw of rows) {
+        const at = new Date().toISOString();
+        const imp = importAgentSalesRow(raw, { at });
+        if (values.video) {
+          const c = client(guard);
+          const segmenter = new SamSegmenter(c);
+          try {
+            await ingestVideo({
+              id: imp.id,
+              video: values.video,
+              declared: imp.declared,
+              policy: imp.policy,
+              brokerId: "agentsales",
+              store,
+              proposer: new MuseProposer(c),
+              segmenter,
+              styleNotes: styleNotes(styleGuide(store)),
+              log: (m) => console.log(m),
+            });
+          } finally {
+            await segmenter.close();
+          }
+          const l = store.loadListing(imp.id);
+          if (l) {
+            l.claims.push(...imp.extraClaims);
+            store.saveListing(l);
+          }
+        } else {
+          store.saveListing({
+            id: imp.id,
+            createdAt: at,
+            declared: imp.declared,
+            policy: imp.policy,
+            claims: [...declaredClaims(imp.declared, "agentsales", at), ...imp.extraClaims],
+          });
+        }
+        console.log(
+          `${imp.id}: ${imp.declared.title}, ${imp.extraClaims.length + 7} declared facts${values.video ? " + video evidence" : " (declared only: add a video to verify)"}`,
+        );
       }
       return;
     }

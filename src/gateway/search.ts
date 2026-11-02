@@ -55,6 +55,18 @@ export interface SearchResult {
   note: string;
 }
 
+/** Facts that have their own criterion; everything else (including declared parking or amenities) can satisfy a must-have. */
+const STRUCTURED = new Set([
+  "d-operation",
+  "d-commune",
+  "d-price",
+  "d-area",
+  "d-bedrooms",
+  "d-bathrooms",
+  "d-pets",
+  "d-address",
+]);
+
 const WEIGHT: Record<VisibleFact["provenance"], number> = {
   visually_verified: 3,
   broker_stated: 2,
@@ -171,7 +183,7 @@ function evaluate(listing: Listing, facts: VisibleFact[], c: Criteria): Criterio
   for (const want of c.must_have ?? []) {
     const wt = tokens(want);
     const hits = facts.filter(
-      (f) => !f.id.startsWith("d-") && wt.every((t) => tokens(f.statement).includes(t)),
+      (f) => !STRUCTURED.has(f.id) && wt.every((t) => tokens(f.statement).includes(t)),
     );
     hits.sort((a, b) => WEIGHT[b.provenance] - WEIGHT[a.provenance]);
     const best = hits[0];
