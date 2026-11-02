@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, generateKeyPairSync as gk } from "node:crypto";
 import { mkdtempSync, readFileSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -11,6 +11,7 @@ import { AgentRegistry } from "../src/gateway/identity.ts";
 import { OfflineAnswerModel } from "../src/gateway/offline-model.ts";
 import { jsonForScript } from "../src/gateway/pages.ts";
 import { startGateway } from "../src/gateway/server.ts";
+import { verifyPassport } from "../src/passport/passport.ts";
 import { Store } from "../src/store.ts";
 
 const fx = (id: string): Listing =>
@@ -42,7 +43,11 @@ beforeAll(async () => {
     model: new OfflineAnswerModel(),
     audit: new AuditLog(join(dir, "a.jsonl")),
   });
-  const http = await startGateway(core, new AgentRegistry([]), 0, "127.0.0.1", store);
+  const issuer = {
+    id: "aval-test",
+    privateKeyPem: gk("ed25519").privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
+  };
+  const http = await startGateway(core, new AgentRegistry([]), 0, "127.0.0.1", store, issuer);
   base = `http://127.0.0.1:${(http.address() as AddressInfo).port}`;
   close = () => http.close();
 });
@@ -117,6 +122,18 @@ describe("public pages for agents that do not speak MCP", () => {
     const idx = await (await get("/listings.json")).json();
     expect(idx.listings.map((l: { id: string }) => l.id)).not.toContain("casa-la-reina");
     expect(await (await get("/listings")).text()).not.toContain("casa-la-reina");
+  });
+
+  it("serves a signed passport that verifies offline against the key published in the discovery file", async () => {
+    const d = await (await get("/.well-known/aval.json")).json();
+    const passport = await (await get("/l/demo-1/passport.json")).json();
+    expect(verifyPassport(passport, { trustedKeys: [d.passport.issuer.public_key] })).toEqual({
+      valid: true,
+      reasons: [],
+    });
+    expect(JSON.stringify(passport).toLowerCase()).not.toContain("irarrazaval");
+    expect((await get("/l/casa-la-reina/passport.json")).status).toBe(404);
+    expect((await get("/l/no-such/passport.json")).status).toBe(404);
   });
 
   it("serves a discovery document that tells an agent how to connect and sign", async () => {

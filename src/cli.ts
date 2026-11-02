@@ -1,4 +1,4 @@
-import { generateKeyPairSync } from "node:crypto";
+import { generateKeyPairSync, generateKeyPairSync as genKeys } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
@@ -18,6 +18,14 @@ import { OfflineAnswerModel } from "./gateway/offline-model.ts";
 import { CriteriaSchema } from "./gateway/search.ts";
 import { startGateway } from "./gateway/server.ts";
 import { MetaClient } from "./meta/client.ts";
+import {
+  type FactProof,
+  issuePassport,
+  type Passport,
+  proveFact,
+  verifyFactProof,
+  verifyPassport,
+} from "./passport/passport.ts";
 import { renderReport } from "./report.ts";
 import { SpendGuard } from "./spend.ts";
 import { Store } from "./store.ts";
@@ -55,6 +63,7 @@ const USAGE = `aval <command>
   edit <listing> <claim> "<new wording>"   broker correction (feeds the taste module)
   taste                                    what the corrections taught, and eval cases
   buyer "<goal>" [--as <agent-id>|--anonymous] [--url <mcp-url>]   a Muse Spark buyer agent using the gateway
+  passport init|issue <id>|verify <file>|prove <file> <fact>|verify-proof <file>   signed, offline-verifiable listing record
   budget                                   spend so far against the ceiling
   audit-verify                             check the audit log's hash chain`;
 
@@ -246,7 +255,17 @@ async function main(): Promise<void> {
       const registry = AgentRegistry.fromFile(join(store.root, "agents.json"));
       const core = new GatewayCore({ store, model, audit });
       const port = Number(values.port);
-      await startGateway(core, registry, port, "127.0.0.1", store);
+      const issuerKey = join(store.root, "keys", "issuer.pem");
+      await startGateway(
+        core,
+        registry,
+        port,
+        "127.0.0.1",
+        store,
+        existsSync(issuerKey)
+          ? { id: "aval-issuer", privateKeyPem: readFileSync(issuerKey, "utf8") }
+          : undefined,
+      );
       console.log(
         `Aval gateway on http://127.0.0.1:${port}/mcp (${values.offline ? "offline model, no spend" : "Muse Spark"})`,
       );
@@ -337,6 +356,60 @@ async function main(): Promise<void> {
         );
       } finally {
         await mcp.close();
+      }
+      return;
+    }
+    case "passport": {
+      const [sub, a, b] = positionals;
+      const keyPath = join(store.root, "keys", "issuer.pem");
+      const issuer = () => {
+        if (!existsSync(keyPath)) throw new Error("no issuer key yet: run `passport init` first");
+        return { id: "aval-issuer", privateKeyPem: readFileSync(keyPath, "utf8") };
+      };
+      if (sub === "init") {
+        if (existsSync(keyPath)) throw new Error("issuer key already exists");
+        mkdirSync(join(store.root, "keys"), { recursive: true });
+        writeFileSync(
+          keyPath,
+          genKeys("ed25519").privateKey.export({ type: "pkcs8", format: "pem" }),
+          { mode: 0o600 },
+        );
+        console.log(
+          `issuer key created; public key: ${(await import("./passport/passport.ts")).publicKeyOf(readFileSync(keyPath, "utf8"))}`,
+        );
+      } else if (sub === "issue") {
+        const l = a ? store.loadListing(a) : null;
+        if (!a || !l) throw new Error("passport issue needs an existing listing id");
+        const p = issuePassport(l, issuer(), { listingDir: store.listingDir(a) });
+        const out = join(store.listingDir(a), "passport.json");
+        writeFileSync(out, `${JSON.stringify(p, null, 2)}\n`);
+        console.log(
+          `${out}\n${p.facts.length} facts, merkle root ${p.header.merkle_root.slice(0, 16)}..., valid until ${p.header.expires_at.slice(0, 10)}`,
+        );
+      } else if (sub === "verify" && a) {
+        const r = verifyPassport(JSON.parse(readFileSync(a, "utf8")) as Passport);
+        console.log(
+          r.valid
+            ? "VALID: signature, Merkle root and dates check out (offline)"
+            : `INVALID: ${r.reasons.join("; ")}`,
+        );
+        process.exitCode = r.valid ? 0 : 1;
+      } else if (sub === "prove" && a && b) {
+        console.log(
+          JSON.stringify(proveFact(JSON.parse(readFileSync(a, "utf8")) as Passport, b), null, 2),
+        );
+      } else if (sub === "verify-proof" && a) {
+        const r = verifyFactProof(JSON.parse(readFileSync(a, "utf8")) as FactProof);
+        console.log(
+          r.valid
+            ? "VALID: this fact is part of the signed passport"
+            : `INVALID: ${r.reasons.join("; ")}`,
+        );
+        process.exitCode = r.valid ? 0 : 1;
+      } else {
+        throw new Error(
+          "passport init | issue <id> | verify <file> | prove <file> <fact-id> | verify-proof <file>",
+        );
       }
       return;
     }

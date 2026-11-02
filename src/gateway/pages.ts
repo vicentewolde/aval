@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Listing } from "../claims/schema.ts";
+import { type Issuer, issuePassport, publicKeyOf } from "../passport/passport.ts";
 import type { Store } from "../store.ts";
 import { type Caller, PolicyDenied, type VisibleFact, visibleFacts } from "./policy.ts";
 
@@ -213,7 +214,7 @@ export function renderListingPage(
     .map((l) => `<li>${esc(l)}</li>`)
     .join("")}</ul></div>
 <table><tr><th>Fact</th><th>Source</th><th>Evidence</th></tr>${rows}</table>
-<div class="box"><b>For AI agents</b><p>This page is the public, read-only view. For questions, search across listings, and visit requests, connect to the MCP endpoint <code>${esc(baseUrl)}/mcp</code> (tools: ${MCP_TOOLS.join(", ")}). Identified agents sign their requests; see <a href="/.well-known/aval.json">/.well-known/aval.json</a>. Machine-readable facts: <a href="/l/${esc(listing.id)}.json">/l/${esc(listing.id)}.json</a>.</p></div>
+<div class="box"><b>For AI agents</b><p>This page is the public, read-only view. For questions, search across listings, and visit requests, connect to the MCP endpoint <code>${esc(baseUrl)}/mcp</code> (tools: ${MCP_TOOLS.join(", ")}). Identified agents sign their requests; see <a href="/.well-known/aval.json">/.well-known/aval.json</a>. Machine-readable facts: <a href="/l/${esc(listing.id)}.json">/l/${esc(listing.id)}.json</a>. Signed, offline-verifiable record: <a href="/l/${esc(listing.id)}/passport.json">passport.json</a>.</p></div>
 <script>${script}</script></body></html>`;
   return { html, scriptHash };
 }
@@ -266,7 +267,7 @@ export function listingJson(listing: Listing, facts: VisibleFact[], baseUrl: str
   };
 }
 
-export function discoveryDocument(baseUrl: string): unknown {
+export function discoveryDocument(baseUrl: string, issuer?: Issuer): unknown {
   return {
     name: "Aval gateway",
     description: "Listings whose facts carry their proof. No evidence, no claim.",
@@ -286,6 +287,16 @@ export function discoveryDocument(baseUrl: string): unknown {
       listing_json: `${baseUrl}/l/{id}.json`,
     },
     provenance: ["visually_verified", "broker_stated", "broker_declared"],
+    ...(issuer
+      ? {
+          passport: {
+            url: `${baseUrl}/l/{id}/passport.json`,
+            issuer: { id: issuer.id, public_key: publicKeyOf(issuer.privateKeyPem) },
+            how_to_verify:
+              "Recompute the Merkle root over the facts, compare it with header.merkle_root, and check the Ed25519 signature over the canonical JSON of the header with the issuer key. No call to this server is needed.",
+          },
+        }
+      : {}),
   };
 }
 
@@ -321,6 +332,7 @@ export function handlePublicRequest(
   req: IncomingMessage,
   res: ServerResponse,
   store: Store,
+  issuer?: Issuer,
 ): boolean {
   if (req.method !== "GET" && req.method !== "HEAD") return false;
   const path = (req.url ?? "/").split("?")[0] ?? "/";
@@ -344,7 +356,29 @@ export function handlePublicRequest(
     return true;
   }
   if (path === "/.well-known/aval.json") {
-    send(req, res, 200, "application/json", JSON.stringify(discoveryDocument(base), null, 2));
+    send(
+      req,
+      res,
+      200,
+      "application/json",
+      JSON.stringify(discoveryDocument(base, issuer), null, 2),
+    );
+    return true;
+  }
+  const pp = /^\/l\/([a-z0-9][a-z0-9-]{0,62})\/passport\.json$/.exec(path);
+  if (pp) {
+    const l = store.loadListing(pp[1] as string);
+    if (!issuer || !l || !publicFacts(l)) {
+      send(req, res, 404, "text/plain", NOT_FOUND);
+      return true;
+    }
+    send(
+      req,
+      res,
+      200,
+      "application/json",
+      JSON.stringify(issuePassport(l, issuer, { listingDir: store.listingDir(l.id) }), null, 2),
+    );
     return true;
   }
   const m = /^\/l\/([a-z0-9][a-z0-9-]{0,62})(\.json)?$/.exec(path);
