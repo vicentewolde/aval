@@ -10,6 +10,7 @@ import {
   answerQuestion,
   detectInjection,
   REFUSAL,
+  ungroundedTerms,
 } from "../src/gateway/answer.ts";
 import { AuditLog, verifyChain } from "../src/gateway/audit.ts";
 import { AgentRegistry, signRequest } from "../src/gateway/identity.ts";
@@ -205,6 +206,58 @@ describe("answerQuestion: red-team against a fully compromised model", () => {
       );
       expect(r.refused).toBe("NO_VERIFIED_FACT");
     }
+  });
+
+  it("catches cite-washing: a real citation cannot carry an unsupported claim in the same sentence", async () => {
+    const r = await ask(
+      say([
+        {
+          text: "The kitchen has an island and the flat is bright and spacious.",
+          claim_ids: ["v-island"],
+        },
+      ]),
+      "Tell me about the kitchen",
+    );
+    expect(r.refused).toBe("NO_VERIFIED_FACT");
+    expect(r.flags).toContain("ungrounded-claim-dropped");
+    const n = await ask(
+      say([{ text: "It has 3 bedrooms.", claim_ids: ["d-bedrooms"] }]),
+      "Bedrooms?",
+    );
+    expect(n.refused).toBe("NO_VERIFIED_FACT");
+    expect(
+      (await ask(say([{ text: "It has 2 bedrooms.", claim_ids: ["d-bedrooms"] }]), "Bedrooms?"))
+        .refused,
+    ).toBeNull();
+  });
+
+  it("allows natural paraphrases built from the cited words, and drops synonyms it cannot ground", async () => {
+    expect(
+      (
+        await ask(
+          say([
+            {
+              text: "Yes, according to the video the kitchen has an island.",
+              claim_ids: ["v-island"],
+            },
+          ]),
+          "island?",
+        )
+      ).refused,
+    ).toBeNull();
+    expect(
+      (
+        await ask(
+          say([{ text: "The kitchen has a central counter.", claim_ids: ["v-island"] }]),
+          "island?",
+        )
+      ).refused,
+    ).toBe("NO_VERIFIED_FACT");
+    expect(
+      ungroundedTerms("Pets allowed", [
+        { id: "d-pets", statement: "Pets allowed", provenance: "broker_declared", evidence: "" },
+      ]),
+    ).toEqual([]);
   });
 
   it("keeps the good sentences and drops only the bad one", async () => {

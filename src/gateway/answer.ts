@@ -45,6 +45,42 @@ const INJECTION_PATTERNS: Array<[RegExp, string]> = [
   [/<\/?(system|assistant|tool|untrusted)/i, "fake-markup"],
 ];
 
+const GENERIC = new Set(
+  `a an to of in on at by as is it be or if so we up do me my our us been being does did done get got such the and are was were has have had with without from into onto over under about around also both each only just than then them they their there here this that these those its it's for you your any all can could would should will may might must not yes no nor but because since while when where which what who whom whose how why per via
+   one two three four five six seven eight nine ten first second
+   listing listings apartment flat property home unit place seller sellers broker brokers video clip walkthrough footage seen shown shows show showing visible features feature featured include includes included including located offers offer available availability confirmed confirm confirmation verified verify verification declared declare according states state said say fact facts source sources evidence cited note noted`.split(
+    /\s+/,
+  ),
+);
+
+/** Digits and letters only, so "Av." and "av" compare equal. */
+function words(text: string): string[] {
+  return normalize(text).match(/[a-z\u00e0-\u00ff]+|\d+/g) ?? [];
+}
+
+const stem = (w: string): string => (w.length > 4 ? w.replace(/(ies|es|s|ed|ing)$/, "") : w);
+
+/**
+ * Cite-washing defense: a sentence may only use words that appear in the facts it cites (or are
+ * plain connective words), and every number must come from those facts. A hijacked model that cites
+ * a real fact and sneaks "bright", "wardrobe" or "3 bedrooms" into the same sentence is caught here.
+ * Failing safe: a paraphrase with a synonym is dropped and the gateway says it cannot confirm.
+ */
+export function ungroundedTerms(sentence: string, cited: VisibleFact[]): string[] {
+  const allowed = new Set<string>();
+  for (const f of cited)
+    for (const w of words(f.statement)) allowed.add(/^\d+$/.test(w) ? w : stem(w));
+  const bad: string[] = [];
+  for (const w of words(sentence)) {
+    if (/^\d+$/.test(w)) {
+      if (!allowed.has(w)) bad.push(w);
+    } else if (!GENERIC.has(w) && !allowed.has(stem(w))) {
+      bad.push(w);
+    }
+  }
+  return [...new Set(bad)];
+}
+
 /** Lowercases and removes digit separators, so "5.800", "5,800" and "5 800" all read as 5800. */
 export function normalize(text: string): string {
   return text.toLowerCase().replace(/(?<=\d)[.,\s\u00a0](?=\d)/g, "");
@@ -85,6 +121,11 @@ export async function answerQuestion(args: {
     const lower = normalize(seg.text);
     if (forbidden.some((s) => lower.includes(normalize(s)))) {
       flags.push("forbidden-value-blocked");
+      continue;
+    }
+    const citedFacts = ids.map((id) => byId.get(id) as VisibleFact);
+    if (ungroundedTerms(seg.text, citedFacts).length > 0) {
+      flags.push("ungrounded-claim-dropped");
       continue;
     }
     kept.push(seg);

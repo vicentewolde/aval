@@ -24,6 +24,14 @@ export class MetaApiError extends Error {
   }
 }
 
+export interface ToolTurn {
+  id: string;
+  text: string;
+  calls: Array<{ name: string; arguments: string; callId: string }>;
+  usage: Usage;
+  costUsd: number;
+}
+
 export class IncompleteResponseError extends Error {
   readonly reason: string;
   constructor(reason: string, outputTokens: number, maxOutputTokens: number) {
@@ -173,6 +181,66 @@ export class MetaClient {
       );
     }
     return { text, usage, costUsd };
+  }
+
+  /**
+   * One turn of a tool-calling conversation (Responses API, function tools). The server keeps the
+   * history: pass `previousResponseId` and `function_call_output` items to continue.
+   */
+  async respondTools(o: {
+    model: TokenModel;
+    input: unknown;
+    instructions?: string;
+    tools: Array<{
+      type: "function";
+      name: string;
+      description: string;
+      parameters: Record<string, unknown>;
+    }>;
+    previousResponseId?: string;
+    maxOutputTokens: number;
+    estInputTokens: number;
+    label: string;
+  }): Promise<ToolTurn> {
+    this.opts.guard.check(maxTokenCostUsd(o.model, o.estInputTokens, o.maxOutputTokens), o.label);
+    const body: Record<string, unknown> = {
+      model: o.model,
+      input: o.input,
+      tools: o.tools,
+      parallel_tool_calls: false,
+      store: true,
+      max_output_tokens: o.maxOutputTokens,
+      reasoning: { effort: "low" },
+    };
+    if (o.instructions) body.instructions = o.instructions;
+    if (o.previousResponseId) body.previous_response_id = o.previousResponseId;
+    const res = await this.send(`${this.baseUrl}/responses`, {
+      method: "POST",
+      headers: this.headers({ "content-type": "application/json" }),
+      body: JSON.stringify(body),
+    });
+    const json = (await res.json()) as ResponsesBody & { id?: string };
+    const usage = json.usage ?? {
+      input_tokens: o.estInputTokens,
+      output_tokens: o.maxOutputTokens,
+    };
+    const costUsd = tokenCostUsd(o.model, usage);
+    this.opts.guard.record(costUsd, o.label, json.usage === undefined);
+    const calls: ToolTurn["calls"] = [];
+    for (const item of json.output ?? []) {
+      const it = item as { type?: string; name?: string; arguments?: string; call_id?: string };
+      if (it.type === "function_call" && it.name && it.call_id)
+        calls.push({ name: it.name, arguments: it.arguments ?? "{}", callId: it.call_id });
+    }
+    const text = extractText(json);
+    if (calls.length === 0 && text.trim() === "") {
+      throw new IncompleteResponseError(
+        json.incomplete_details?.reason ?? "empty output",
+        usage.output_tokens,
+        o.maxOutputTokens,
+      );
+    }
+    return { id: json.id ?? "", text, calls, usage, costUsd };
   }
 
   /**

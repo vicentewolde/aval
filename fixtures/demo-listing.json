@@ -1,0 +1,440 @@
+{
+  "id": "demo-1",
+  "createdAt": "2026-11-02T02:01:53.022Z",
+  "declared": {
+    "title": "Departamento 2 dormitorios, Nunoa (demo)",
+    "operation": "sale",
+    "commune": "Nunoa",
+    "address": "Av. Irarrazaval 3550, depto 1204 (fictional)",
+    "price": {
+      "amount": 5250,
+      "currency": "UF"
+    },
+    "area_m2": 62,
+    "bedrooms": 2,
+    "bathrooms": 1,
+    "pets_allowed": true
+  },
+  "policy": {
+    "showExactAddress": false,
+    "priceVisibility": "range",
+    "priceRangePct": 0.1,
+    "visitSlots": [
+      "2026-11-10 10:00",
+      "2026-11-10 12:00",
+      "2026-11-11 18:00"
+    ],
+    "allowAnonymousAgents": true,
+    "maxQuestionsPerHour": 60
+  },
+  "claims": [
+    {
+      "id": "d-operation",
+      "category": "other",
+      "statement": "For sale",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T02:01:53.022Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-commune",
+      "category": "other",
+      "statement": "Located in Nunoa",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T02:01:53.022Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-price",
+      "category": "other",
+      "statement": "Price UF 5250",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T02:01:53.022Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-area",
+      "category": "layout",
+      "statement": "62 m2",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T02:01:53.022Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-bedrooms",
+      "category": "layout",
+      "statement": "2 bedrooms",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T02:01:53.022Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-bathrooms",
+      "category": "layout",
+      "statement": "1 bathrooms",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T02:01:53.022Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-pets",
+      "category": "other",
+      "statement": "Pets allowed",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T02:01:53.022Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-address",
+      "category": "other",
+      "statement": "Address: Av. Irarrazaval 3550, depto 1204 (fictional)",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T02:01:53.022Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "c1",
+      "category": "feature",
+      "statement": "Wooden dining table with four chairs and place settings",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 0,
+        "t_sec": 0,
+        "box": {
+          "x1": 0,
+          "y1": 684,
+          "x2": 328,
+          "y2": 1181,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.8439024686813354,
+        "concept": "dining table",
+        "frames_detected": 38,
+        "image": "evidence/c1.jpg"
+      },
+      "note": null
+    },
+    {
+      "id": "c2",
+      "category": "appliance",
+      "statement": "Wall-mounted flat-screen television above a wooden console",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 13,
+        "t_sec": 2.6,
+        "box": {
+          "x1": 0,
+          "y1": 446,
+          "x2": 70,
+          "y2": 587,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.8865247964859009,
+        "concept": "wall-mounted television",
+        "frames_detected": 27,
+        "image": "evidence/c2.jpg"
+      },
+      "note": null
+    },
+    {
+      "id": "c3",
+      "category": "feature",
+      "statement": "Light grey sectional sofa with cushions",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 36,
+        "t_sec": 7.2,
+        "box": {
+          "x1": 0,
+          "y1": 783,
+          "x2": 36,
+          "y2": 1100,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.7299578189849854,
+        "concept": "sofa",
+        "frames_detected": 32,
+        "image": "evidence/c3.jpg"
+      },
+      "note": null
+    },
+    {
+      "id": "c4",
+      "category": "feature",
+      "statement": "Oval marble-top coffee table on a rug",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 28,
+        "t_sec": 5.6,
+        "box": {
+          "x1": 0,
+          "y1": 746,
+          "x2": 131,
+          "y2": 917,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.8750000596046448,
+        "concept": "coffee table",
+        "frames_detected": 21,
+        "image": "evidence/c4.jpg"
+      },
+      "note": null
+    },
+    {
+      "id": "c5",
+      "category": "feature",
+      "statement": "Floor-to-ceiling window with sheer and heavy curtains",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 27,
+        "t_sec": 5.4,
+        "box": {
+          "x1": 0,
+          "y1": 306,
+          "x2": 77,
+          "y2": 747,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.8672199249267578,
+        "concept": "window curtains",
+        "frames_detected": 26,
+        "image": "evidence/c5.jpg"
+      },
+      "note": null
+    },
+    {
+      "id": "c6",
+      "category": "feature",
+      "statement": "Dressing table with mirror and stool against wall",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 84,
+        "t_sec": 16.8,
+        "box": {
+          "x1": 0,
+          "y1": 404,
+          "x2": 233,
+          "y2": 1141,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.719298243522644,
+        "concept": "dressing table",
+        "frames_detected": 16,
+        "image": "evidence/c6.jpg"
+      },
+      "note": null
+    },
+    {
+      "id": "c7",
+      "category": "feature",
+      "statement": "Made bed with pillows and throw blanket",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 91,
+        "t_sec": 18.2,
+        "box": {
+          "x1": 0,
+          "y1": 776,
+          "x2": 177,
+          "y2": 1279,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.8241757750511169,
+        "concept": "bed",
+        "frames_detected": 27,
+        "image": "evidence/c7.jpg"
+      },
+      "note": null
+    },
+    {
+      "id": "c8",
+      "category": "feature",
+      "statement": "Round glass dining table with black chairs",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 118,
+        "t_sec": 23.6,
+        "box": {
+          "x1": 271,
+          "y1": 694,
+          "x2": 577,
+          "y2": 984,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.9101123809814453,
+        "concept": "round dining table",
+        "frames_detected": 24,
+        "image": "evidence/c8.jpg"
+      },
+      "note": null
+    },
+    {
+      "id": "c9",
+      "category": "room",
+      "statement": "Open kitchen with black cabinets and breakfast bar stools",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 130,
+        "t_sec": 26,
+        "box": {
+          "x1": 429,
+          "y1": 658,
+          "x2": 719,
+          "y2": 693,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.7229437232017517,
+        "concept": "kitchen counter",
+        "frames_detected": 22,
+        "image": "evidence/c9.jpg"
+      },
+      "note": null
+    },
+    {
+      "id": "c10",
+      "category": "feature",
+      "statement": "Floor-to-ceiling wooden wardrobe wall beside bed",
+      "provenance": "unverified",
+      "evidence": null,
+      "note": "SAM found \"wood wardrobe\" in 0 frame(s) inside 29.5-42.5s; 2 needed."
+    },
+    {
+      "id": "c11",
+      "category": "feature",
+      "statement": "Freestanding clawfoot bathtub under a window",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 206,
+        "t_sec": 41.2,
+        "box": {
+          "x1": 304,
+          "y1": 651,
+          "x2": 575,
+          "y2": 791,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.9609756469726562,
+        "concept": "bathtub",
+        "frames_detected": 90,
+        "image": "evidence/c11.jpg"
+      },
+      "note": null
+    },
+    {
+      "id": "c12",
+      "category": "feature",
+      "statement": "Wall-mounted white bathroom sink with exposed pipes",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 206,
+        "t_sec": 41.2,
+        "box": {
+          "x1": 113,
+          "y1": 596,
+          "x2": 271,
+          "y2": 657,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.8865247964859009,
+        "concept": "bathroom sink",
+        "frames_detected": 20,
+        "image": "evidence/c12.jpg"
+      },
+      "note": null
+    }
+  ]
+}
