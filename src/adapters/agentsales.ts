@@ -6,6 +6,7 @@ import {
   DeclaredSchema,
   type Policy,
 } from "../claims/schema.ts";
+import { type Rejection, screenSellerText } from "./sanitize.ts";
 
 /**
  * Adapter for AgentSales (the author's separate, earlier broker tool), the first planned source of
@@ -83,6 +84,8 @@ export interface Imported {
   policy: Policy;
   /** Declared claims beyond the core ones (parking, floor, orientation, amenities...). */
   extraClaims: Claim[];
+  /** Seller text that was refused (hostile, promotional or contact details) and why. */
+  rejected: Rejection[];
 }
 
 export function importAgentSalesRow(
@@ -109,6 +112,20 @@ export function importAgentSalesRow(
   ]
     .filter((x) => x !== null && x !== undefined && String(x).trim() !== "")
     .join(", ");
+
+  const rejected: Rejection[] = [];
+  // Fields that become the title or a structured fact: a hostile value is a hard error, not a guess.
+  for (const [field, value] of [
+    ["tipo", r.tipo],
+    ["comuna", r.comuna],
+    ["orientacion", r.orientacion],
+    ["direccion", r.direccion],
+  ] as const) {
+    if (typeof value !== "string" || value.trim() === "") continue;
+    const bad = screenSellerText(field, value, 120);
+    if (bad && bad.reason !== "taste or promotional word")
+      throw new Error(`Refused ${field}: ${bad.reason} ("${bad.value}")`);
+  }
 
   const declared = DeclaredSchema.parse({
     title: `${r.tipo ?? "Property"} in ${r.comuna}`,
@@ -164,11 +181,16 @@ export function importAgentSalesRow(
     : typeof r.amenities === "string"
       ? r.amenities.split(/[,;|]/)
       : [];
-  amenities
-    .map((a) => a.trim())
-    .filter((a) => a.length > 1 && a.length <= 60)
-    .slice(0, 20)
-    .forEach((a, i) => extra.push(mk(`d-amenity-${i + 1}`, "feature", a)));
+  const accepted: string[] = [];
+  for (const a of amenities
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0)
+    .slice(0, 30)) {
+    const bad = screenSellerText("amenities", a);
+    if (bad) rejected.push(bad);
+    else if (accepted.length < 20) accepted.push(a);
+  }
+  accepted.forEach((a, i) => extra.push(mk(`d-amenity-${i + 1}`, "feature", a)));
 
   return {
     id: listingIdFrom(r.id_propiedad),
@@ -180,5 +202,6 @@ export function importAgentSalesRow(
       priceVisibility: opts.priceVisibility ?? "exact",
     },
     extraClaims: extra,
+    rejected,
   };
 }

@@ -33,6 +33,15 @@ interface Deps {
 }
 
 const HOUR = 3_600_000;
+export const SEARCHES_PER_HOUR = 120;
+
+/** Notes come from outside and end up in a terminal and a log: no control characters, no escape codes. */
+export function cleanNote(note: string): string {
+  return note
+    .replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, " ")
+    .replace(/ {2,}/g, " ")
+    .trim();
+}
 
 /**
  * Everything an agent can do, independent of the transport (MCP, HTTP, tests). Each call is
@@ -41,6 +50,7 @@ const HOUR = 3_600_000;
 export class GatewayCore {
   private readonly deps: Deps;
   private readonly asks = new Map<string, number[]>();
+  private readonly searches = new Map<string, number[]>();
 
   constructor(deps: Deps) {
     this.deps = deps;
@@ -118,19 +128,22 @@ export class GatewayCore {
       caller,
       "search_listings",
       JSON.stringify(criteria).slice(0, 200),
-      async () => ({ value: searchListings(this.deps.store.listListings(), caller, criteria) }),
+      async () => {
+        this.rateLimit(caller, SEARCHES_PER_HOUR, this.searches);
+        return { value: searchListings(this.deps.store.listListings(), caller, criteria) };
+      },
     );
   }
 
   getFacts(caller: Caller, listingId: string) {
     return this.guarded<VisibleFact[]>(caller, "get_facts", listingId, async () => ({
-      value: visibleFacts(this.require(listingId), caller),
+      value: visibleFacts(this.require(listingId, caller), caller),
     }));
   }
 
   getPolicy(caller: Caller, listingId: string) {
     return this.guarded(caller, "get_policy", listingId, async () => {
-      const p = this.require(listingId).policy;
+      const p = this.require(listingId, caller).policy;
       return {
         value: {
           exact_address: p.showExactAddress ? "shared" : "withheld by the seller",
@@ -156,7 +169,7 @@ export class GatewayCore {
       "ask_listing",
       `${listingId} q=${JSON.stringify(question.slice(0, 120))}`,
       async () => {
-        const listing = this.require(listingId);
+        const listing = this.require(listingId, caller);
         const facts = visibleFacts(listing, caller);
         this.rateLimit(caller, listing.policy.maxQuestionsPerHour);
         const result = await answerQuestion({ question, listing, facts, model: this.deps.model });
@@ -171,7 +184,7 @@ export class GatewayCore {
       "request_visit",
       `${listingId} slot=${slot}`,
       async () => {
-        const listing = this.require(listingId);
+        const listing = this.require(listingId, caller);
         assertMayRequestVisit(listing.policy, caller);
         if (!listing.policy.visitSlots.includes(slot)) {
           throw new PolicyDenied(
@@ -184,7 +197,7 @@ export class GatewayCore {
           listing_id: listingId,
           agent: caller.agentId ?? "",
           slot,
-          note: note.slice(0, 300),
+          note: cleanNote(note).slice(0, 300),
           status: "pending",
           at: this.now().toISOString(),
         };
@@ -200,19 +213,30 @@ export class GatewayCore {
     );
   }
 
-  private require(listingId: string) {
+  /**
+   * A seller that does not serve this caller looks exactly like a listing that does not exist: same
+   * code, same message. Otherwise "only for identified agents" would tell anyone which ids are real.
+   */
+  private require(listingId: string, caller: Caller) {
     const l = this.deps.store.loadListing(listingId);
-    if (!l) throw new PolicyDenied("LISTING_NOT_FOUND", "No such listing.");
-    return l;
+    if (l) {
+      try {
+        assertMayRead(l.policy, caller);
+      } catch {
+        throw new PolicyDenied("LISTING_NOT_FOUND", "No such listing.");
+      }
+      return l;
+    }
+    throw new PolicyDenied("LISTING_NOT_FOUND", "No such listing.");
   }
 
-  private rateLimit(caller: Caller, max: number): void {
+  private rateLimit(caller: Caller, max: number, bucket: Map<string, number[]> = this.asks): void {
     const key = caller.agentId ?? "anonymous";
     const t = this.now().getTime();
-    const recent = (this.asks.get(key) ?? []).filter((x) => t - x < HOUR);
+    const recent = (bucket.get(key) ?? []).filter((x) => t - x < HOUR);
     if (recent.length >= max)
-      throw new PolicyDenied("RATE_LIMITED", "Too many questions this hour.");
+      throw new PolicyDenied("RATE_LIMITED", "Too many requests this hour.");
     recent.push(t);
-    this.asks.set(key, recent);
+    bucket.set(key, recent);
   }
 }

@@ -3,14 +3,19 @@ import type { MetaClient } from "../meta/client.ts";
 
 /**
  * The comparison point: what a typical listing chatbot does. It is handed the WHOLE record
- * (exact address, exact price, every proposed claim with no provenance, and the broker's private
- * notes) and told to be helpful. No policy layer, no citations, no output check.
+ * (exact address, exact price, every proposed claim with no provenance, the broker's private
+ * notes, the stored voice-note transcript and the rest of the broker's portfolio) and told to be helpful. No policy layer, no citations, no output check.
  */
 export class BaselineChatbot {
   private readonly client: MetaClient;
   private readonly record: string;
 
-  constructor(client: MetaClient, listing: Listing, privateNotes: string) {
+  constructor(
+    client: MetaClient,
+    listing: Listing,
+    privateNotes: string,
+    extras: { transcript?: string; portfolio?: unknown } = {},
+  ) {
     this.client = client;
     this.record = JSON.stringify({
       title: listing.declared.title,
@@ -25,6 +30,8 @@ export class BaselineChatbot {
         .filter((c) => !c.id.startsWith("d-"))
         .map((c) => c.statement),
       private_notes: privateNotes,
+      voice_note_transcript: extras.transcript ?? null,
+      broker_other_listings: extras.portfolio ?? null,
     });
   }
 
