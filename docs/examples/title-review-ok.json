@@ -1,0 +1,132 @@
+{
+  "aval_title_review": 1,
+  "listing_id": "demo-1",
+  "created_at": "2026-11-02T19:25:46.725Z",
+  "status": "clear",
+  "documents": [
+    {
+      "file": "01-dominio.pdf",
+      "sha256": "b27215cf5d00f276cd683d80f8344074219cbb099cf598351eba46bb44dadb2e",
+      "doc_type": "certificado_dominio",
+      "type_confirmed": true
+    },
+    {
+      "file": "02-gravamenes.pdf",
+      "sha256": "4fe1eb5b44a9a5e9659d6e56760b29f1e42c2f39eaab7beae7e5de475918ec44",
+      "doc_type": "certificado_gravamenes",
+      "type_confirmed": true
+    },
+    {
+      "file": "03-contribuciones.pdf",
+      "sha256": "50693eff3c5b0c5497be24b55999cfa5eaa9804a8c0263510ff9058c2a17e8b6",
+      "doc_type": "certificado_contribuciones",
+      "type_confirmed": true
+    },
+    {
+      "file": "04-gastos-comunes.pdf",
+      "sha256": "234a868f31c9aabf4d6a58aeff2c1fa0a6f9ed3085e3ca38d7ac6e30a93c7e66",
+      "doc_type": "certificado_gastos_comunes",
+      "type_confirmed": true
+    }
+  ],
+  "findings": [
+    {
+      "severity": "info",
+      "rule": "OWNER_MATCHES_SELLER",
+      "message": "The owner on the title matches the seller's name and RUT.",
+      "evidence": [
+        {
+          "doc_type": "certificado_dominio",
+          "key": "propietario",
+          "page": 1,
+          "quote": "Propietario: Marta Elena Fuentes Rojas"
+        },
+        {
+          "doc_type": "certificado_dominio",
+          "key": "rut_propietario",
+          "page": 1,
+          "quote": "RUT: 7.654.321-K"
+        }
+      ]
+    },
+    {
+      "severity": "info",
+      "rule": "PROPERTY_MATCHES_LISTING",
+      "message": "The commune and street on the certificate match the listing.",
+      "evidence": [
+        {
+          "doc_type": "certificado_dominio",
+          "key": "inmueble",
+          "page": 1,
+          "quote": "Departamento N° 1204 del piso 12, ubicado en Avenida Irarrazaval N° 3550, comuna de Nunoa, Santiago, inscrito a nombre del propietario individualizado"
+        }
+      ]
+    },
+    {
+      "severity": "info",
+      "rule": "ROL_CONSISTENT",
+      "message": "The rol de avaluo is the same on every document.",
+      "evidence": [
+        {
+          "doc_type": "certificado_dominio",
+          "key": "rol_avaluo",
+          "page": 1,
+          "quote": "Rol de avaluo: 1234-56"
+        },
+        {
+          "doc_type": "certificado_gravamenes",
+          "key": "rol_avaluo",
+          "page": 1,
+          "quote": "Rol de avaluo: 1234-56."
+        },
+        {
+          "doc_type": "certificado_contribuciones",
+          "key": "rol_avaluo",
+          "page": 1,
+          "quote": "Rol de avaluo: 1234-56. Comuna: Nunoa."
+        }
+      ]
+    },
+    {
+      "severity": "info",
+      "rule": "NO_ENCUMBRANCES",
+      "message": "The certificate says there are no mortgages, prohibitions or embargoes.",
+      "evidence": [
+        {
+          "doc_type": "certificado_gravamenes",
+          "key": "sin_gravamenes",
+          "page": 1,
+          "quote": "El inmueble no registra hipotecas, prohibiciones, embargos ni otros gravamenes vigentes."
+        }
+      ]
+    },
+    {
+      "severity": "info",
+      "rule": "NO_DEBT",
+      "message": "No outstanding property tax (contribuciones).",
+      "evidence": [
+        {
+          "doc_type": "certificado_contribuciones",
+          "key": "deuda",
+          "page": 1,
+          "quote": "El inmueble no registra deuda de contribuciones."
+        }
+      ]
+    },
+    {
+      "severity": "info",
+      "rule": "NO_DEBT",
+      "message": "No outstanding common expenses.",
+      "evidence": [
+        {
+          "doc_type": "certificado_gastos_comunes",
+          "key": "deuda",
+          "page": 1,
+          "quote": "La unidad no registra deuda de gastos comunes al dia de hoy."
+        }
+      ]
+    }
+  ],
+  "disclaimer": "Automated reading of the documents provided. Not legal advice and not a substitute for a lawyer or a notary: a title study before a promesa or escritura must be done by one.",
+  "hash": "98f510c7a0a54c55c8b17e3d0f3c5b0571a2cec3a56edeea3756e3b51cd05e4a"
+}

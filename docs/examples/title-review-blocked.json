@@ -1,0 +1,197 @@
+{
+  "aval_title_review": 1,
+  "listing_id": "demo-1",
+  "created_at": "2026-11-02T19:27:15.259Z",
+  "status": "blocked",
+  "documents": [
+    {
+      "file": "01-dominio.pdf",
+      "sha256": "9fb9d6296fd476ff513d2df2b8afa665df0a3d83ade8ddbdaac9a90f770e5266",
+      "doc_type": "certificado_dominio",
+      "type_confirmed": true
+    },
+    {
+      "file": "02-gravamenes.pdf",
+      "sha256": "69817f355db668ddd57065c2e41d7605c69111a118efd64dc68c416e5626ef20",
+      "doc_type": "certificado_gravamenes",
+      "type_confirmed": true
+    },
+    {
+      "file": "03-contribuciones.pdf",
+      "sha256": "bb7f3cfbc0f5285f5cc66a967acd11f9f18fbfa375d6c7ba23d970858752eeaf",
+      "doc_type": "certificado_contribuciones",
+      "type_confirmed": true
+    },
+    {
+      "file": "04-gastos-comunes.pdf",
+      "sha256": "b113d3a56a255bd71aba8d0130b3bef4d6a1cb6e2154ea7b7d8ab1f5bbba46b4",
+      "doc_type": "certificado_gastos_comunes",
+      "type_confirmed": true
+    }
+  ],
+  "findings": [
+    {
+      "severity": "blocker",
+      "rule": "OWNER_IS_NOT_SELLER",
+      "message": "The owner on the certificate of title is not the person selling, so this seller cannot sell it. This is also the classic sign of a forged or reused document.",
+      "evidence": [
+        {
+          "doc_type": "certificado_dominio",
+          "key": "propietario",
+          "page": 1,
+          "quote": "Propietario: Ricardo Andres Mella Soto"
+        },
+        {
+          "doc_type": "certificado_dominio",
+          "key": "rut_propietario",
+          "page": 1,
+          "quote": "RUT: 9.876.543-2"
+        }
+      ]
+    },
+    {
+      "severity": "info",
+      "rule": "PROPERTY_MATCHES_LISTING",
+      "message": "The commune and street on the certificate match the listing.",
+      "evidence": [
+        {
+          "doc_type": "certificado_dominio",
+          "key": "inmueble",
+          "page": 1,
+          "quote": "Departamento N° 1204 del piso 12, ubicado en Avenida Irarrazaval N° 3550, comuna de Nunoa, Santiago, inscrito a nombre del propietario individualizado"
+        }
+      ]
+    },
+    {
+      "severity": "info",
+      "rule": "ROL_CONSISTENT",
+      "message": "The rol de avaluo is the same on every document.",
+      "evidence": [
+        {
+          "doc_type": "certificado_dominio",
+          "key": "rol_avaluo",
+          "page": 1,
+          "quote": "Rol de avaluo: 1234-56"
+        },
+        {
+          "doc_type": "certificado_gravamenes",
+          "key": "rol_avaluo",
+          "page": 1,
+          "quote": "Rol de avaluo: 1234-56. Inmueble: Avenida Irarrazaval N° 3550, departamento 1204, Nunoa."
+        },
+        {
+          "doc_type": "certificado_contribuciones",
+          "key": "rol_avaluo",
+          "page": 1,
+          "quote": "Rol de avaluo: 1234-56. Comuna: Nunoa."
+        }
+      ]
+    },
+    {
+      "severity": "blocker",
+      "rule": "ENCUMBRANCE_BLOCKS_SALE",
+      "message": "There is a prohibition, embargo or court order registered on the property: it cannot be sold until a court lifts it.",
+      "evidence": [
+        {
+          "doc_type": "certificado_gravamenes",
+          "key": "gravamen",
+          "page": 1,
+          "quote": "Prohibicion de enajenar decretada por el 12° Juzgado Civil de Santiago, causa Rol C-4567-2025, inscrita a fojas 33.210 numero 15.002 del ano 2025."
+        }
+      ]
+    },
+    {
+      "severity": "warning",
+      "rule": "MORTGAGE_REGISTERED",
+      "message": "A mortgage is registered. It must be paid off and lifted (alzamiento) at closing, or the buyer assumes it. A lawyer should handle this.",
+      "evidence": [
+        {
+          "doc_type": "certificado_gravamenes",
+          "key": "gravamen",
+          "page": 1,
+          "quote": "Hipoteca a favor de Banco Ejemplo S.A., inscrita a fojas 12.345 numero 9.876 del ano 2019."
+        }
+      ]
+    },
+    {
+      "severity": "info",
+      "rule": "NO_DEBT",
+      "message": "No outstanding property tax (contribuciones).",
+      "evidence": [
+        {
+          "doc_type": "certificado_contribuciones",
+          "key": "deuda",
+          "page": 1,
+          "quote": "El inmueble no registra deuda de contribuciones."
+        }
+      ]
+    },
+    {
+      "severity": "info",
+      "rule": "NO_DEBT",
+      "message": "No outstanding common expenses.",
+      "evidence": [
+        {
+          "doc_type": "certificado_gastos_comunes",
+          "key": "deuda",
+          "page": 1,
+          "quote": "La unidad no registra deuda de gastos comunes al dia de hoy."
+        }
+      ]
+    },
+    {
+      "severity": "warning",
+      "rule": "CERTIFICATE_STALE",
+      "message": "certificado_dominio was issued 89 days ago; certificates for a sale are normally required within 30 days (a heuristic: check with the notary).",
+      "evidence": [
+        {
+          "doc_type": "certificado_dominio",
+          "key": "fecha_emision",
+          "page": 1,
+          "quote": "Fecha de emision: 5 de agosto de 2026"
+        }
+      ]
+    },
+    {
+      "severity": "warning",
+      "rule": "CERTIFICATE_STALE",
+      "message": "certificado_gravamenes was issued 89 days ago; certificates for a sale are normally required within 30 days (a heuristic: check with the notary).",
+      "evidence": [
+        {
+          "doc_type": "certificado_gravamenes",
+          "key": "fecha_emision",
+          "page": 1,
+          "quote": "Fecha de emision: 5 de agosto de 2026"
+        }
+      ]
+    },
+    {
+      "severity": "warning",
+      "rule": "CERTIFICATE_STALE",
+      "message": "certificado_contribuciones was issued 89 days ago; certificates for a sale are normally required within 30 days (a heuristic: check with the notary).",
+      "evidence": [
+        {
+          "doc_type": "certificado_contribuciones",
+          "key": "fecha_emision",
+          "page": 1,
+          "quote": "Fecha de emision: 5 de agosto de 2026"
+        }
+      ]
+    },
+    {
+      "severity": "warning",
+      "rule": "CERTIFICATE_STALE",
+      "message": "certificado_gastos_comunes was issued 89 days ago; certificates for a sale are normally required within 30 days (a heuristic: check with the notary).",
+      "evidence": [
+        {
+          "doc_type": "certificado_gastos_comunes",
+          "key": "fecha_emision",
+          "page": 1,
+          "quote": "Fecha de emision: 5 de agosto de 2026"
+        }
+      ]
+    }
+  ],
+  "disclaimer": "Automated reading of the documents provided. Not legal advice and not a substitute for a lawyer or a notary: a title study before a promesa or escritura must be done by one.",
+  "hash": "22f3e880a7ef3cf9ba2337d9ecd5e4db7ab10745bb15026fc8045e9ba9a7887d"
+}

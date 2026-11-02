@@ -1,0 +1,132 @@
+{
+  "aval_title_review": 1,
+  "listing_id": "demo-1",
+  "created_at": "2026-11-02T19:26:33.818Z",
+  "status": "needs_attention",
+  "documents": [
+    {
+      "file": "01-dominio.pdf",
+      "sha256": "0d40a7f697bf57e042792671a154da73853ad3d0d84d8e665ea77a7affb8ed13",
+      "doc_type": "certificado_dominio",
+      "type_confirmed": true
+    },
+    {
+      "file": "02-gravamenes.pdf",
+      "sha256": "1dde31f95f02e28bd08fa372fef2a079a2630ffc737541133c1504bc5aaad2a7",
+      "doc_type": "certificado_gravamenes",
+      "type_confirmed": true
+    },
+    {
+      "file": "03-contribuciones.pdf",
+      "sha256": "879f83353a424e1eabf572fa8660ca0d8a169346f63e38734d0fc6b885019895",
+      "doc_type": "certificado_contribuciones",
+      "type_confirmed": true
+    },
+    {
+      "file": "04-gastos-comunes.pdf",
+      "sha256": "9655ac01ebcd88d6e34e5bf36c2150cc042c5e947fea002291ad0e3b797bf2ee",
+      "doc_type": "certificado_gastos_comunes",
+      "type_confirmed": true
+    }
+  ],
+  "findings": [
+    {
+      "severity": "info",
+      "rule": "OWNER_MATCHES_SELLER",
+      "message": "The owner on the title matches the seller's name and RUT.",
+      "evidence": [
+        {
+          "doc_type": "certificado_dominio",
+          "key": "propietario",
+          "page": 1,
+          "quote": "Propietario: Marta Elena Fuentes Rojas"
+        },
+        {
+          "doc_type": "certificado_dominio",
+          "key": "rut_propietario",
+          "page": 1,
+          "quote": "RUT: 7.654.321-K"
+        }
+      ]
+    },
+    {
+      "severity": "info",
+      "rule": "PROPERTY_MATCHES_LISTING",
+      "message": "The commune and street on the certificate match the listing.",
+      "evidence": [
+        {
+          "doc_type": "certificado_dominio",
+          "key": "inmueble",
+          "page": 1,
+          "quote": "Departamento N° 1204 del piso 12, ubicado en Avenida Irarrazaval N° 3550, comuna de Nunoa, Santiago, inscrito a nombre del propietario individualizado"
+        }
+      ]
+    },
+    {
+      "severity": "info",
+      "rule": "ROL_CONSISTENT",
+      "message": "The rol de avaluo is the same on every document.",
+      "evidence": [
+        {
+          "doc_type": "certificado_dominio",
+          "key": "rol_avaluo",
+          "page": 1,
+          "quote": "Rol de avaluo: 1234-56"
+        },
+        {
+          "doc_type": "certificado_gravamenes",
+          "key": "rol_avaluo",
+          "page": 1,
+          "quote": "Rol de avaluo: 1234-56."
+        },
+        {
+          "doc_type": "certificado_contribuciones",
+          "key": "rol_avaluo",
+          "page": 1,
+          "quote": "Rol de avaluo: 1234-56. Comuna: Nunoa."
+        }
+      ]
+    },
+    {
+      "severity": "warning",
+      "rule": "MORTGAGE_REGISTERED",
+      "message": "A mortgage is registered. It must be paid off and lifted (alzamiento) at closing, or the buyer assumes it. A lawyer should handle this.",
+      "evidence": [
+        {
+          "doc_type": "certificado_gravamenes",
+          "key": "gravamen",
+          "page": 1,
+          "quote": "Hipoteca a favor de Banco Ejemplo S.A., inscrita a fojas 12.345 numero 9.876 del ano 2019, por la suma de UF 2.500."
+        }
+      ]
+    },
+    {
+      "severity": "warning",
+      "rule": "DEBT_OUTSTANDING",
+      "message": "There is an outstanding debt of CLP 148.320 in property tax (contribuciones). It should be settled at closing.",
+      "evidence": [
+        {
+          "doc_type": "certificado_contribuciones",
+          "key": "deuda",
+          "page": 1,
+          "quote": "El inmueble registra deuda de contribuciones por la suma de $ 148.320 correspondiente a la cuota de abril."
+        }
+      ]
+    },
+    {
+      "severity": "warning",
+      "rule": "DEBT_OUTSTANDING",
+      "message": "There is an outstanding debt of CLP 86.500 in common expenses. It should be settled at closing.",
+      "evidence": [
+        {
+          "doc_type": "certificado_gastos_comunes",
+          "key": "deuda",
+          "page": 1,
+          "quote": "La unidad registra deuda de gastos comunes por la suma de $ 86.500."
+        }
+      ]
+    }
+  ],
+  "disclaimer": "Automated reading of the documents provided. Not legal advice and not a substitute for a lawyer or a notary: a title study before a promesa or escritura must be done by one.",
+  "hash": "7cdca5a3befbce525797739d7d13dbf9a166dd1a20c8c8e3b2bbdeba77c8cf62"
+}

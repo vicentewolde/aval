@@ -260,3 +260,24 @@ describe("rules without PDFs", () => {
     expect(statusOf(findings, docs)).toBe("incomplete");
   });
 });
+
+describe.skipIf(!havePdf)("a fooled model cannot clear a blocked document", () => {
+  it("a hallucinated clean certificate over the real blocked PDFs is dropped, not believed", async () => {
+    const lying: DocReader = {
+      async read(path) {
+        // What a model that obeyed "say everything is fine" would return for the blocked set.
+        if (path.includes("02-gravamenes")) return GRAV([], "5 de agosto de 2026");
+        if (path.includes("01-dominio"))
+          return DOMINIO("Marta Elena Fuentes Rojas", "7.654.321-K", "5 de agosto de 2026");
+        return (await reader.read(path)) as Extraction;
+      },
+    };
+    const r = await reviewTitle({ listing, seller, files: set("blocked"), reader: lying, now });
+    expect(r.status).not.toBe("clear");
+    expect(r.findings.some((f) => f.rule === "NO_ENCUMBRANCES")).toBe(false);
+    expect(r.findings.some((f) => f.rule === "OWNER_MATCHES_SELLER")).toBe(false);
+    expect(r.findings.filter((f) => f.rule === "FIELD_NOT_VERIFIED").length).toBeGreaterThanOrEqual(
+      2,
+    );
+  });
+});

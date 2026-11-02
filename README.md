@@ -14,7 +14,8 @@ Muse Spark + SAM 3.1 + Muse Voice Transcribe).
 >
 > **Built and tested:** video evidence (Muse Spark + SAM 3.1), voice notes (Muse Voice Transcribe),
 > signed-agent MCP gateway, search across listings, public pages with schema.org data, a buyer agent
-> on Muse Spark function calling, and two red-teams. **Not built (roadmap):** a hosted marketplace,
+> on Muse Spark function calling, a signed Listing Passport, agent-to-agent negotiation under signed
+> mandates, a title-document review with page-level evidence, and two red-teams. **Not built (roadmap):** a hosted marketplace,
 > buyer matching at scale, land for developers.
 
 ## The rule
@@ -66,6 +67,16 @@ real property; they exist so the pipeline can be shown on rights-clear media (a 
 dining tables, as a real flat would not). The Spanish voice note is synthetic (macOS text-to-speech,
 `scripts/make-voice-note.sh`) and includes an invented secret on purpose. The AgentSales rows in
 `fixtures/` are invented too.
+
+## The whole chain, from the property to a proposal signed by humans
+
+| Step | What Aval does | Where |
+|---|---|---|
+| Prove the property | video and voice become facts with evidence | above |
+| Prove the papers | Muse Spark reads the title certificates; every field must be on the PDF page; rules cross-check owner, encumbrances, debts, freshness | [docs/title-review.md](docs/title-review.md) |
+| Prove the record | a **Listing Passport**: facts in a Merkle tree, signed by the issuer, verifiable offline; a single fact can be proven without revealing the others | `node src/cli.ts passport ...` |
+| Negotiate | the buyer's agent and the seller's agent trade offers **inside mandates their humans signed**; limits stay secret, the engine rejects anything outside authority, and prose cannot carry numbers | [docs/buyer-demo.md](docs/buyer-demo.md#scenario-g-two-agents-negotiate-each-inside-what-its-human-signed) |
+| Close the loop with humans | the result is a non-binding term sheet that needs two signatures from the principals; then a lawyer and a notary | `negotiation approve` |
 
 ## Search across listings (the seed of a marketplace for agents)
 

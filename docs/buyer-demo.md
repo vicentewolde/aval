@@ -308,3 +308,37 @@ Excluded listings from search:
 ```
 
 Notes on F: the line "Meta lost the previous response; resuming from a recap" is the recovery path working live. The search first reported the kitchen as unconfirmed because it matched whole words only ("kitchen" vs a verified "kitchenette"); that was fixed afterwards (prefix match for words of 5+ letters), and the agent had resolved it by asking the gateway.
+
+## Scenario G: two agents negotiate, each inside what its human signed
+
+Both sides are real Muse Spark: the buyer agent calls the MCP tools `negotiation_start / offer / accept`;
+the seller agent runs inside the gateway. Camila signed a buyer mandate (target UF 4,700, **maximum UF 5,100**,
+5 rounds, closing in 30 to 60 days); the broker signed a seller mandate (asking UF 5,250, **floor UF 4,900**,
+which only the broker knows: it came out of a voice note and appears nowhere in the listing). Neither agent
+is shown the other's limit. Output of the live run (`neg-96ac60ae`, buyer agent cost $0.04):
+
+```
+ 1. buyer  offer  UF 4700, 45 days  "Buyer proposes fair market value ... ready to close promptly with clean conditions"
+ 2. seller offer  UF 5150, 60 days  "Thank you for your interest and prompt proposal. Seller values property location ..."
+ 3. buyer  offer  UF 4800, 50 days
+ 4. seller offer  UF 5050, 60 days
+ 5. buyer  offer  UF 4900, 55 days
+ 6. seller offer  UF 4990, 60 days
+ 7. buyer  accept
+status: agreed  UF 4990, 60 days, subject_to_title_review
+term sheet: non-binding; approvals buyer=pending seller=pending
+```
+
+What to notice:
+
+- UF 4,990 is above the seller's floor (4,900) and below the buyer's maximum (5,100): the engine only lets a
+  deal exist inside both mandates (a 500-run property test checks it). Neither number appears in anything
+  the other agent received.
+- The rationale channel accepts no digits and no number words, in English or Spanish, so the agents cannot
+  smuggle a price (or a limit) through prose, and instructions inside it are flagged.
+- The buyer's final report says plainly "the purchase is NOT done": the output is a **non-binding term
+  sheet** that needs two human approvals, signed with the principals' own keys, and then a lawyer and a
+  notary. Approving it as `camila` and as `broker-perez` (`negotiation approve neg-96ac60ae --as ...`)
+  turns it into "both principals approved, still non-binding".
+- Wording honesty: one rationale said "comparable sales", something the agent was never given. Rationales
+  are untrusted free text for the other side and the term sheet records only price, days and conditions.
