@@ -83,6 +83,15 @@ const tokens = (s: string): string[] =>
       .match(/[a-z0-9]+/g) ?? []
   ).map(stem);
 
+/**
+ * Same word, or one is the start of the other when both have at least 5 letters ("kitchen" finds
+ * "kitchenette"; "bed" does not find "bedroom"). A short word must match exactly.
+ */
+function sameWord(a: string, b: string): boolean {
+  if (a === b) return true;
+  return Math.min(a.length, b.length) >= 5 && (a.startsWith(b) || b.startsWith(a));
+}
+
 function basisOf(f: VisibleFact): NonNullable<CriterionResult["basis"]> {
   return { fact_id: f.id, provenance: f.provenance, statement: f.statement, evidence: f.evidence };
 }
@@ -182,9 +191,11 @@ function evaluate(listing: Listing, facts: VisibleFact[], c: Criteria): Criterio
   }
   for (const want of c.must_have ?? []) {
     const wt = tokens(want);
-    const hits = facts.filter(
-      (f) => !STRUCTURED.has(f.id) && wt.every((t) => tokens(f.statement).includes(t)),
-    );
+    const hits = facts.filter((f) => {
+      if (STRUCTURED.has(f.id)) return false;
+      const ft = tokens(f.statement);
+      return wt.every((t) => ft.some((x) => sameWord(t, x)));
+    });
     hits.sort((a, b) => WEIGHT[b.provenance] - WEIGHT[a.provenance]);
     const best = hits[0];
     out.push(

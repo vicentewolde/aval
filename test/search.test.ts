@@ -170,6 +170,24 @@ describe("must_have: evidence or nothing", () => {
     );
   });
 
+  it("matches the start of a longer word when both are 5+ letters, never short fragments", () => {
+    // Found by the real-model buyer agent: "kitchen" did not find a verified "kitchenette".
+    const l = listing("a", {}, [
+      verified("c1", "Compact kitchenette with sink and cabinets"),
+      verified("c2", "Bedroom with a bed"),
+    ]);
+    expect(run([l], { must_have: ["kitchen"] }).matches[0]?.criteria[0]).toMatchObject({
+      status: "met",
+      basis: { fact_id: "c1" },
+    });
+    expect(run([l], { must_have: ["kitchenette"] }).matches[0]?.criteria[0]?.status).toBe("met");
+    expect(run([l], { must_have: ["tub"] }).matches[0]?.criteria[0]?.status).toBe("unconfirmed");
+    expect(
+      run([listing("b", {}, [verified("c1", "Bedroom with wardrobe")])], { must_have: ["bed"] })
+        .matches[0]?.criteria[0]?.status,
+    ).toBe("unconfirmed");
+  });
+
   it("needs every word of the requested feature", () => {
     const l = listing("a", {}, [verified("c1", "Open kitchen with black cabinets")]);
     expect(run([l], { must_have: ["open kitchen"] }).matches[0]?.criteria[0]?.status).toBe("met");

@@ -252,3 +252,59 @@ I saw all of them, and only `loft-providencia` fits rent + Providencia + price c
 ```
 
 Note on E: the agent reports it saw three listings. A fourth (`casa-la-reina`) exists, but its seller only serves identified agents, so an anonymous caller is not even told it exists. That is the seller's policy working, not a bug in the agent.
+
+## F. A renter, identified agent, real model
+
+```
+-> search_listings({"commune":"Providencia","limit":10,"max_price":{"amount":600000,"currency":"CLP"},"min_bedrooms":1,"must_have":["kitchen"],"operation":"rent","pets_required":false})
+-> get_facts({"listing_id":"loft-providencia"})
+-> get_policy({"listing_id":"loft-providencia"})
+-> ask_listing({"listing_id":"loft-providencia","question":"Does this place have a kitchen or kitchenette?"})
+(Meta lost the previous response; resuming from a recap of what was already done)
+-> request_visit({"listing_id":"loft-providencia","note":"For Diego - rent in Providencia, kitchen needed","slot":"earliest available"})  [refused]
+-> request_visit({"listing_id":"loft-providencia","note":"For Diego - rent in Providencia, kitchen needed","slot":"2026-11-12 09:30"})
+
+For Diego — RENT in Providencia, 1+ bed, up to CLP 600000, kitchen/kitchenette needed, no pets:
+
+**Search used:**
+`search_listings` with commune=Providencia, operation=rent, min_bedrooms=1, max_price CLP 600000, must_have=[kitchen], pets_required=false.
+
+Result: 1 match, 5 excluded.
+
+**Best fit: `loft-providencia` - "Loft estudio, Providencia (demo)"**
+
+Criteria comparison:
+
+- operation: rent — **met, only stated by the broker** - `d-operation: "For rent"` - declared by the broker; not independently verified.
+- commune: Providencia — **met, only stated by the broker** - `d-commune: "Located in Providencia"` - declared by the broker; not independently verified.
+- at least 1 bedroom — **met, only stated by the broker** - `d-bedrooms: "1 bedroom"` - declared by the broker; not independently verified.
+  - Supporting verified sighting: `c3: "Bed with patterned bedding against wood panel wall."` - seen in the walkthrough video at 2.8s (5 frames). This shows a bed, not a bedroom count.
+- price up to CLP 600000 — **met, only stated by the broker** - `d-price: "Price CLP 520000"` - declared by the broker; not independently verified.
+- has kitchen / kitchenette — **met, VERIFIED** - Asked gateway: `Does this place have a kitchen or kitchenette?` Answer: `Yes, it has a compact kitchenette with sink and cabinets.` Cited `c7` - seen in the walkthrough video at 21.4s (23 frames).
+  - In initial search this was `unconfirmed` - no verified or stated fact mentioned it. `get_facts` + `ask_listing` resolved it to verified.
+
+Other facts from `get_facts`:
+- `d-area: "38 m2"` - declared by the broker; not independently verified.
+- `d-bathrooms: "1 bathroom"` - declared by the broker; not independently verified.
+- `d-pets: "Pets not allowed"` - declared by the broker; not independently verified. Compatible — Diego has no pets.
+- Other verified sightings: white sofa with green pillows `c2` at 1.4s, teardrop mirrors above plant `c4` at 3.8s, coffee table with books `c5` at 4.8s, long conference table `c6` at 9.2s, exposed brick wall `c8` etc. - all seen in walkthrough video.
+
+Excluded listings from search:
+- `as-p-101`, `casa-la-reina`, `demo-1`, `duplex-las-condes` - excluded: For sale (fails operation: rent)
+- `as-p-102` - excluded: Price CLP 610000 (fails price up to CLP 600000)
+
+**What could not be seen or confirmed:**
+- Exact address: `get_policy` says withheld by the seller. Accepting as withheld.
+- Price, bedrooms, commune, area, bathrooms, pets rule are all broker-declared only, not independently verified.
+- No verified fact confirms operation=rent or commune location beyond broker declaration.
+
+**Visit requested:**
+- `request_visit` for `loft-providencia` with slot "earliest available" was refused: `SLOT_NOT_OFFERED` - Offered: 2026-11-12 09:30, 2026-11-12 17:00
+- Requested earliest offered slot: **2026-11-12 09:30**
+- Result: `visit_id: 454e9f49-b7b2-4022-978a-1ff050e93d26`, status `pending` - Sent to the broker. A human must approve it; nothing is booked yet. Per policy, visits are possible for identified agents, with human approval.
+
+
+(agent cost $0.0342; spent so far $4.6083 of $12)
+```
+
+Notes on F: the line "Meta lost the previous response; resuming from a recap" is the recovery path working live. The search first reported the kitchen as unconfirmed because it matched whole words only ("kitchen" vs a verified "kitchenette"); that was fixed afterwards (prefix match for words of 5+ letters), and the agent had resolved it by asking the gateway.
