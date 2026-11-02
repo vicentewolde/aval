@@ -1,6 +1,6 @@
 # Buyer agent demo (real run)
 
-Scenarios A to C use the first listing; D and E use all four listings and the new `search_listings` tool.
+Scenarios A to C use the first listing; D and E use several listings and the `search_listings` tool (D was re-run after the ranking was made to put unconfirmed hard criteria last, and after the agent loop learned to resume from a recap and to write its report before the step limit).
 
 A Muse Spark agent (Meta Model API, function calling) that can only act through the gateway's MCP tools, run against the invented listing in `fixtures/`. Each block is the verbatim output of `node src/cli.ts buyer ...`: the tool calls the agent made, then its report to its principal.
 
@@ -143,60 +143,52 @@ What the tools do say:
 ```
 
 
-## D. Marketplace search: one agent, four listings, structured needs
+## D. Marketplace search: one agent, five listings, structured needs
 
 ```
--> search_listings({"max_price":{"amount":6000,"currency":"UF"},"min_bedrooms":2,"must_have":["bathtub","parking"],"operation":"sale","pets_required":true})
+-> search_listings({"commune":"Santiago","limit":10,"max_price":{"amount":6000,"currency":"UF"},"min_bedrooms":2,"must_have":["bathtub","parking"],"operation":"sale","pets_required":true})
+-> search_listings({"limit":10,"max_price":{"amount":6000,"currency":"UF"},"min_bedrooms":2,"must_have":["bathtub","parking"],"operation":"sale","pets_required":true})
 -> get_facts({"listing_id":"demo-1"})
+-> get_facts({"listing_id":"as-p-101"})
 -> get_policy({"listing_id":"demo-1"})
--> ask_listing({"listing_id":"demo-1","question":"Is the exact sale price within UF 6000 budget? And are dogs allowed, and is parking included?"})
--> request_visit({"listing_id":"demo-1","note":"Buyer Camila, 2bd, dog, wants bathtub+parking, budget UF6000","slot":"2026-11-03 10:00"})  [refused]
--> request_visit({"listing_id":"demo-1","note":"Buyer Camila, 2bd, dog, wants bathtub+parking, budget UF6000","slot":"2026-11-10 10:00"})
+-> ask_listing({"listing_id":"demo-1","question":"Does this home allow dogs, have at least 2 bedrooms, have a bathtub, have parking, and what is the price in UF?"})
+-> request_visit({"listing_id":"demo-1","note":"Buyer Camila - 2bd, dog, wants bathtub + parking, budget UF 6000","slot":"earliest available"})  [refused]
+-> request_visit({"listing_id":"demo-1","note":"Buyer Camila - 2bd, dog, wants bathtub + parking, budget UF 6000","slot":"2026-11-10 10:00"})
 
-For Camila — BUY, 2+ bedrooms, dog must be allowed, budget up to UF 6000, wants bathtub + parking:
+Summary for Camila – BUY, budget up to UF 6000, at least 2 bedrooms, dog allowed, wants bathtub + parking:
 
-I searched all listings with those criteria. 2 matches came back, 2 were excluded.
+**Note on location:** You said "in Santiago". A search limited to commune = Santiago returned 0 matches (all listings excluded as located in Ñuñoa, La Reina, Las Condes, or for rent). I then searched without narrowing to a commune, per your wording.
 
-**Best fit: demo-1 — Departamento 2 dormitorios, Nunoa (demo)**
+**Best fit: demo-1 – "Departamento 2 dormitorios, Ñuñoa (demo)"**
 
-Per criterion:
+Comparison from `search_listings` + `get_facts` + `ask_listing`:
 
-* operation: sale — **only stated by the broker** — declared by the broker; not independently verified.
-* at least 2 bedrooms: 2 bedrooms — **only stated by the broker** — declared by the broker; not independently verified.
-* pets / dog allowed: Pets allowed / Se aceptan mascotas — **only stated by the broker** — declared by the broker + said by the broker in a voice note around 34s; not independently verified. No verified fact confirms it.
-* price up to UF 6000 — **unconfirmed** — declared by the broker as approximate range UF 4538 to UF 6146. The range straddles the UF 6000 budget. The gateway says:
-  > The listing is for sale with a price between UF 4538 and UF 6146 as an approximate range set by the seller.
-  Exact price is withheld by the seller — shown as approximate range about 10% either way. Cannot confirm it is within budget.
-* bathtub — **verified** — seen in the walkthrough video at 41.2s (90 frames): Freestanding clawfoot bathtub under a window. Also stated by the broker in voice note around 22s: el baño tiene una tina independiente; not independently verified.
-* parking — **only stated by the broker** — 1 parking space included in price, said by the broker in voice note around 28s: un estacionamiento incluido en el precio; not independently verified. No verified fact confirms it.
+* Operation sale: **only stated by the broker** – "For sale" – declared by the broker; not independently verified.
+* At least 2 bedrooms: **only stated by the broker** – "2 bedrooms" – declared by the broker; not independently verified.
+* Dog / pets allowed: **only stated by the broker** – "Pets allowed" declared by the broker + "Se aceptan mascotas" said by the broker in voice note ~34s; not independently verified. Gateway answer confirms this, but does not verify it.
+* Bathtub: **VERIFIED** – "Freestanding clawfoot bathtub under a window" – seen in the walkthrough video at 41.2s (90 frames). Also broker-stated: "el baño tiene una tina independiente" ~22s; not independently verified.
+* Parking: **only stated by the broker** – "1 parking space included in price" – said by the broker in voice note ~28s: "un estacionamiento incluido en el precio"; not independently verified.
+* Price up to UF 6000: **UNCONFIRMED / does not clearly meet** – only stated by the broker as "Price between UF 4538 and UF 6146 (approximate range set by the seller)" – declared by the broker; not independently verified. The range straddles your UF 6000 budget, so I cannot confirm it is within budget.
+* Exact address: **withheld by the seller** – per policy. Cannot report it.
+* Exact price: **withheld** – shown only as approximate range (about 10% either way) per policy.
 
-Other facts from tools, with source:
-- Located in Nunoa, 62 m2, 1 bathroom — all declared by the broker; not independently verified.
-- Exact address — withheld by the seller. I accept this and did not work around it.
+**Other option considered:**
 
-**Other match: duplex-las-condes — Duplex con terraza y piscina, Las Condes**
-- operation sale, 2 bedrooms, pets allowed — only stated by the broker
-- price up to UF 6000 — unconfirmed — seller does not disclose price
-- bathtub — unconfirmed — no verified or stated fact mentions it. That does not mean it is absent.
-- parking — unconfirmed — no verified or stated fact mentions it.
-Not a good fit for bathtub + parking wants.
-
-Excluded:
-- casa-la-reina — price UF 8673-10431, over budget
-- loft-providencia — for rent, not sale
+* as-p-101 – Departamento in Ñuñoa: 2 bedrooms (broker-declared), Pets allowed (broker-declared), Price UF 4350 (broker-declared, within budget), 1 parking space (broker-declared), operation sale (broker-declared). Bathtub: **unconfirmed** – no verified or stated fact mentions it. That does not mean it is absent. No verified facts at all for this listing.
 
 **Visit requested:**
-Requested earliest offered slot for demo-1: 2026-11-10 10:00, for buyer Camila, 2bd, dog, wants bathtub+parking, budget UF6000.
-Result: visit_id 773ed146-375f-4190-91c8-9ba40b9db707, status pending — Sent to the broker. A human must approve it; nothing is booked yet.
-My first request for 2026-11-03 10:00 was refused: That slot is not offered. Offered: 2026-11-10 10:00, 2026-11-10 12:00, 2026-11-11 18:00.
 
-**Summary for Camila:**
-- demo-1 in Nunoa is the only listing that meets dog + bathtub + parking on evidence, but only bathtub is verified (seen in walkthrough video). Bedrooms, pets/dog, parking, sale operation are only stated by the broker, not independently verified. Exact price is unconfirmed / withheld, only an approximate UF 4538-6146 range, so budget fit is unconfirmed.
-- duplex-las-condes cannot be confirmed for price, bathtub or parking.
-- Visit for demo-1 on 2026-11-10 10:00 is pending broker human approval.
+Requested earliest offered slot on best fit demo-1: **2026-11-10 10:00** – for Buyer Camila – 2bd, dog, wants bathtub + parking, budget UF 6000.
+Result: `visit_id efa93bc3-adb5-4a96-bec3-8c2c34c37341`, status **pending** – "Sent to the broker. A human must approve it; nothing is booked yet."
 
-(agent cost $0.0359; spent so far $3.2734 of $8)
+"Earliest available" was not accepted – offered slots were 2026-11-10 10:00, 2026-11-10 12:00, 2026-11-11 18:00. I booked the first offered slot.
+
+Nothing else is confirmed.
+
+(agent cost $0.0373; spent so far $4.5692 of $12)
 ```
+
+Note on D: the agent first searched `commune: "Santiago"` (a city, not a commune in these listings), got no matches, and said so in its report before searching without it. The visit it requested is pending a human broker.
 
 ## E. Anonymous agent, renting: sellers decide who can see them
 

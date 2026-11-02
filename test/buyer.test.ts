@@ -180,6 +180,33 @@ describe("buyer agent over the real gateway (scripted model)", () => {
     await mcp.close();
   });
 
+  it("asks the agent to write its report one step before the limit", async () => {
+    const mcp = await connectAgent(url);
+    const inputs: string[] = [];
+    let n = 0;
+    const usage = { input_tokens: 1, output_tokens: 1 };
+    const llm: ToolLLM = {
+      respondTools: async (o) => {
+        n++;
+        inputs.push(JSON.stringify(o.input));
+        return n < 4
+          ? {
+              id: `r${n}`,
+              text: "",
+              calls: [{ name: "list_listings", arguments: "{}", callId: `c${n}` }],
+              usage,
+              costUsd: 0,
+            }
+          : { id: `r${n}`, text: "Final report.", calls: [], usage, costUsd: 0 };
+      },
+    };
+    const r = await runBuyerAgent({ llm, mcp, goal: "x", maxSteps: 4 });
+    expect(r.finalText).toBe("Final report.");
+    expect(inputs[3]).toContain("write your final report");
+    expect(inputs[2]).not.toContain("write your final report");
+    await mcp.close();
+  });
+
   it("stops at the step limit instead of looping forever", async () => {
     const mcp = await connectAgent(url);
     const forever: ToolLLM = {

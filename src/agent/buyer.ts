@@ -77,7 +77,8 @@ export async function runBuyerAgent(args: {
     estInputTokens: 6000,
     label: "buyer-agent",
   });
-  for (let i = 0; i < (args.maxSteps ?? 8); i++) {
+  const maxSteps = args.maxSteps ?? 14;
+  for (let i = 0; i < maxSteps; i++) {
     let turn: ToolTurn;
     try {
       turn = await args.llm.respondTools({
@@ -135,7 +136,23 @@ export async function runBuyerAgent(args: {
         output: text.slice(0, 8000),
       });
     }
-    input = outputs;
+    // One step before the limit, ask for the final report, so a busy agent never ends without writing it.
+    input =
+      i === maxSteps - 2
+        ? [
+            ...outputs,
+            {
+              type: "message",
+              role: "user",
+              content: [
+                {
+                  type: "input_text",
+                  text: "You are almost out of steps. Do not call more tools: write your final report to your principal now.",
+                },
+              ],
+            },
+          ]
+        : outputs;
   }
   return { steps, finalText: "(stopped: step limit reached)", costUsd };
 }
