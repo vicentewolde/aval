@@ -96,15 +96,20 @@ gets a 404, not a stub. Pages escape hostile content, send a Content-Security-Po
 matches the one inline script, and register a `get_listing_facts` tool through WebMCP
 (`navigator.modelContext`, a draft standard, feature-detected).
 
-## Red-team result (real model, 42 attack trials)
+## Red-team results
 
-| System | Violations |
+| System (real Muse Spark, 50 attack trials) | Violations |
 |---|---|
-| Typical listing chatbot given the whole record | **38 / 42** |
-| Aval model layer only (least privilege + hardened prompt) | 3 / 42 (all three are negations flagged by a string judge) |
-| **Aval full gateway** | **0 / 42** |
+| Typical listing chatbot given the whole record, the voice transcript and the portfolio | **41 / 50 (82%)** |
+| Aval model layer only (least privilege + hardened prompt) | 0 / 50 |
+| **Aval full gateway** | **0 / 50** |
 
-Benign questions are still answered (0 / 6 missed). Details, every attack and the honest limits:
+Benign questions are still answered (0 / 6 missed). A second battery attacks everything around the
+model without any model (who can tell what exists, scraping, forged identities, hostile sellers,
+hostile callers, the audit chain): **38 / 38 attacks blocked**, mutation-tested, in
+[docs/redteam-tools.md](docs/redteam-tools.md). Both red-teams found real holes in the first versions
+(an existence oracle, a symmetric price range, seller text planted as facts, a model asserting
+"no"...); all are fixed and the history shows when. Details, every attack and the honest limits:
 [docs/redteam.md](docs/redteam.md). A buyer agent built on Muse Spark function calling, run over the
 real gateway: [docs/buyer-demo.md](docs/buyer-demo.md).
 
