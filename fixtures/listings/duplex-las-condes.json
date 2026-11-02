@@ -1,0 +1,415 @@
+{
+  "id": "duplex-las-condes",
+  "createdAt": "2026-11-02T03:14:50.071Z",
+  "declared": {
+    "title": "Duplex con terraza y piscina, Las Condes (demo)",
+    "operation": "sale",
+    "commune": "Las Condes",
+    "address": "Av. Apoquindo 4800, piso 20 (fictional)",
+    "price": {
+      "amount": 14500,
+      "currency": "UF"
+    },
+    "area_m2": 185,
+    "bedrooms": 2,
+    "bathrooms": 3,
+    "pets_allowed": true
+  },
+  "policy": {
+    "showExactAddress": false,
+    "priceVisibility": "hidden",
+    "priceRangePct": 0.1,
+    "visitSlots": [
+      "2026-11-15 12:00"
+    ],
+    "allowAnonymousAgents": true,
+    "maxQuestionsPerHour": 60
+  },
+  "claims": [
+    {
+      "id": "d-operation",
+      "category": "other",
+      "statement": "For sale",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:14:50.071Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-commune",
+      "category": "other",
+      "statement": "Located in Las Condes",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:14:50.071Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-price",
+      "category": "other",
+      "statement": "Price UF 14500",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:14:50.071Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-area",
+      "category": "layout",
+      "statement": "185 m2",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:14:50.071Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-bedrooms",
+      "category": "layout",
+      "statement": "2 bedrooms",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:14:50.071Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-bathrooms",
+      "category": "layout",
+      "statement": "3 bathrooms",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:14:50.071Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-pets",
+      "category": "other",
+      "statement": "Pets allowed",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:14:50.071Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-address",
+      "category": "other",
+      "statement": "Address: Av. Apoquindo 4800, piso 20 (fictional)",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:14:50.071Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "c1",
+      "category": "room",
+      "statement": "Covered outdoor seating area with wooden-framed sofas with white cushions.",
+      "provenance": "unverified",
+      "evidence": null,
+      "note": "SAM found \"outdoor sofa\" in 0 frame(s) inside -1.5-11.5s; 2 needed."
+    },
+    {
+      "id": "c2",
+      "category": "finish",
+      "statement": "Wooden plank deck flooring under the outdoor seating area.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 0,
+        "t_sec": 0,
+        "box": {
+          "x1": 0,
+          "y1": 758,
+          "x2": 459,
+          "y2": 840,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.8865247964859009,
+        "concept": "wooden deck",
+        "frames_detected": 58,
+        "image": "evidence/c2.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c3",
+      "category": "feature",
+      "statement": "Dark slatted pergola roof over the outdoor seating area.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 12,
+        "t_sec": 2.4,
+        "box": {
+          "x1": 0,
+          "y1": 435,
+          "x2": 625,
+          "y2": 527,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.7419355511665344,
+        "concept": "pergola",
+        "frames_detected": 46,
+        "image": "evidence/c3.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c4",
+      "category": "feature",
+      "statement": "Potted trees in large planters around the patio.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 0,
+        "t_sec": 0,
+        "box": {
+          "x1": 436,
+          "y1": 438,
+          "x2": 628,
+          "y2": 771,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.9609756469726562,
+        "concept": "potted tree",
+        "frames_detected": 57,
+        "image": "evidence/c4.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c5",
+      "category": "feature",
+      "statement": "Large paved courtyard adjacent to the seating deck.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 46,
+        "t_sec": 9.2,
+        "box": {
+          "x1": 0,
+          "y1": 681,
+          "x2": 301,
+          "y2": 839,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.7064220309257507,
+        "concept": "paved courtyard",
+        "frames_detected": 37,
+        "image": "evidence/c5.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c6",
+      "category": "feature",
+      "statement": "Floor-to-ceiling sliding glass doors connecting house interior to courtyard.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 39,
+        "t_sec": 7.8,
+        "box": {
+          "x1": 70,
+          "y1": 550,
+          "x2": 253,
+          "y2": 689,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.7299578189849854,
+        "concept": "sliding glass door",
+        "frames_detected": 49,
+        "image": "evidence/c6.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c7",
+      "category": "layout",
+      "statement": "Long side walkway lined with planters and wall strip lighting.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 78,
+        "t_sec": 15.6,
+        "box": {
+          "x1": 82,
+          "y1": 726,
+          "x2": 719,
+          "y2": 843,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.7264957427978516,
+        "concept": "outdoor walkway",
+        "frames_detected": 29,
+        "image": "evidence/c7.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c8",
+      "category": "feature",
+      "statement": "Interior staircase with integrated step lighting along the wall.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 109,
+        "t_sec": 21.8,
+        "box": {
+          "x1": 127,
+          "y1": 626,
+          "x2": 232,
+          "y2": 724,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.8012422323226929,
+        "concept": "staircase",
+        "frames_detected": 43,
+        "image": "evidence/c8.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c9",
+      "category": "finish",
+      "statement": "White marble-look flooring and stair treads.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 150,
+        "t_sec": 30,
+        "box": {
+          "x1": 246,
+          "y1": 633,
+          "x2": 605,
+          "y2": 807,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.9024390578269958,
+        "concept": "marble floor",
+        "frames_detected": 37,
+        "image": "evidence/c9.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c10",
+      "category": "room",
+      "statement": "Rooftop terrace covered with green artificial turf and outdoor sofas.",
+      "provenance": "unverified",
+      "evidence": null,
+      "note": "SAM found \"rooftop terrace\" in 0 frame(s) inside 29.5-37.5s; 2 needed."
+    },
+    {
+      "id": "c11",
+      "category": "feature",
+      "statement": "White planters with small trees on the rooftop terrace.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 159,
+        "t_sec": 31.8,
+        "box": {
+          "x1": 422,
+          "y1": 668,
+          "x2": 502,
+          "y2": 821,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.96875,
+        "concept": "white planter",
+        "frames_detected": 11,
+        "image": "evidence/c11.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c12",
+      "category": "feature",
+      "statement": "Narrow plunge pool on a balcony with glass railing and lounge chair.",
+      "provenance": "unverified",
+      "evidence": null,
+      "note": "SAM found \"plunge pool\" in 0 frame(s) inside 38.5-49.5s; 2 needed."
+    }
+  ]
+}

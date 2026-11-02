@@ -1,0 +1,433 @@
+{
+  "id": "casa-la-reina",
+  "createdAt": "2026-11-02T03:11:42.315Z",
+  "declared": {
+    "title": "Casa 3 dormitorios con jardin, La Reina (demo)",
+    "operation": "sale",
+    "commune": "La Reina",
+    "address": "Pasaje Los Almendros 455 (fictional)",
+    "price": {
+      "amount": 9800,
+      "currency": "UF"
+    },
+    "area_m2": 140,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "pets_allowed": true
+  },
+  "policy": {
+    "showExactAddress": false,
+    "priceVisibility": "range",
+    "priceRangePct": 0.08,
+    "visitSlots": [
+      "2026-11-13 11:00",
+      "2026-11-14 10:00"
+    ],
+    "allowAnonymousAgents": false,
+    "maxQuestionsPerHour": 60
+  },
+  "claims": [
+    {
+      "id": "d-operation",
+      "category": "other",
+      "statement": "For sale",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:11:42.315Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-commune",
+      "category": "other",
+      "statement": "Located in La Reina",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:11:42.315Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-price",
+      "category": "other",
+      "statement": "Price UF 9800",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:11:42.315Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-area",
+      "category": "layout",
+      "statement": "140 m2",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:11:42.315Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-bedrooms",
+      "category": "layout",
+      "statement": "3 bedrooms",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:11:42.315Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-bathrooms",
+      "category": "layout",
+      "statement": "2 bathrooms",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:11:42.315Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-pets",
+      "category": "other",
+      "statement": "Pets allowed",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:11:42.315Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-address",
+      "category": "other",
+      "statement": "Address: Pasaje Los Almendros 455 (fictional)",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:11:42.315Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "c1",
+      "category": "room",
+      "statement": "Open-plan living and dining area with white walls.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 2,
+        "t_sec": 0.4,
+        "box": {
+          "x1": 0,
+          "y1": 435,
+          "x2": 719,
+          "y2": 841,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.8083832263946533,
+        "concept": "open-plan living room",
+        "frames_detected": 69,
+        "image": "evidence/c1.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c2",
+      "category": "feature",
+      "statement": "Wooden dining table with white chairs.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 0,
+        "t_sec": 0,
+        "box": {
+          "x1": 283,
+          "y1": 700,
+          "x2": 466,
+          "y2": 814,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.9139785170555115,
+        "concept": "dining table",
+        "frames_detected": 32,
+        "image": "evidence/c2.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c3",
+      "category": "feature",
+      "statement": "Gray L-shaped sofa with coffee table and rug.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 23,
+        "t_sec": 4.6,
+        "box": {
+          "x1": 390,
+          "y1": 655,
+          "x2": 509,
+          "y2": 739,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.8241757750511169,
+        "concept": "gray sofa",
+        "frames_detected": 41,
+        "image": "evidence/c3.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c4",
+      "category": "feature",
+      "statement": "Tall bookshelf filled with books.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 13,
+        "t_sec": 2.6,
+        "box": {
+          "x1": 467,
+          "y1": 581,
+          "x2": 554,
+          "y2": 779,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.7387754917144775,
+        "concept": "bookshelf",
+        "frames_detected": 42,
+        "image": "evidence/c4.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c5",
+      "category": "appliance",
+      "statement": "White washing machine next to living area.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 35,
+        "t_sec": 7,
+        "box": {
+          "x1": 72,
+          "y1": 686,
+          "x2": 169,
+          "y2": 783,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.9024390578269958,
+        "concept": "washing machine",
+        "frames_detected": 23,
+        "image": "evidence/c5.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c6",
+      "category": "feature",
+      "statement": "Backyard with green lawn and stone pavers.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 65,
+        "t_sec": 13,
+        "box": {
+          "x1": 220,
+          "y1": 649,
+          "x2": 564,
+          "y2": 813,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.7460317611694336,
+        "concept": "backyard lawn",
+        "frames_detected": 63,
+        "image": "evidence/c6.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c7",
+      "category": "feature",
+      "statement": "Raised stone hot tub with steps.",
+      "provenance": "unverified",
+      "evidence": null,
+      "note": "SAM found \"hot tub\" in 0 frame(s) inside 12.5-25.5s; 2 needed."
+    },
+    {
+      "id": "c8",
+      "category": "feature",
+      "statement": "Wide outdoor steps leading to raised patio.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 77,
+        "t_sec": 15.4,
+        "box": {
+          "x1": 346,
+          "y1": 678,
+          "x2": 483,
+          "y2": 748,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.859649121761322,
+        "concept": "outdoor steps",
+        "frames_detected": 44,
+        "image": "evidence/c8.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c9",
+      "category": "other",
+      "statement": "Two-story house exterior viewed from backyard.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 121,
+        "t_sec": 24.2,
+        "box": {
+          "x1": 292,
+          "y1": 466,
+          "x2": 664,
+          "y2": 736,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.9259259104728699,
+        "concept": "two-story house",
+        "frames_detected": 84,
+        "image": "evidence/c9.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c10",
+      "category": "feature",
+      "statement": "Outdoor dining table with chairs on covered patio.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 148,
+        "t_sec": 29.6,
+        "box": {
+          "x1": 384,
+          "y1": 679,
+          "x2": 530,
+          "y2": 743,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.8358974456787109,
+        "concept": "outdoor dining table",
+        "frames_detected": 48,
+        "image": "evidence/c10.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c11",
+      "category": "appliance",
+      "statement": "Built-in outdoor grill on patio.",
+      "provenance": "unverified",
+      "evidence": null,
+      "note": "SAM found \"outdoor grill\" in 0 frame(s) inside 22.5-29.5s; 2 needed."
+    },
+    {
+      "id": "c12",
+      "category": "feature",
+      "statement": "Large glass sliding doors opening to patio.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 133,
+        "t_sec": 26.6,
+        "box": {
+          "x1": 378,
+          "y1": 601,
+          "x2": 574,
+          "y2": 729,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.7344398498535156,
+        "concept": "glass sliding doors",
+        "frames_detected": 64,
+        "image": "evidence/c12.jpg",
+        "quote": null
+      },
+      "note": null
+    }
+  ]
+}

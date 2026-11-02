@@ -1,0 +1,450 @@
+{
+  "id": "loft-providencia",
+  "createdAt": "2026-11-02T03:08:25.960Z",
+  "declared": {
+    "title": "Loft estudio, Providencia (demo)",
+    "operation": "rent",
+    "commune": "Providencia",
+    "address": "Calle Los Leones 1020, depto 8 (fictional)",
+    "price": {
+      "amount": 520000,
+      "currency": "CLP"
+    },
+    "area_m2": 38,
+    "bedrooms": 1,
+    "bathrooms": 1,
+    "pets_allowed": false
+  },
+  "policy": {
+    "showExactAddress": false,
+    "priceVisibility": "exact",
+    "priceRangePct": 0.1,
+    "visitSlots": [
+      "2026-11-12 09:30",
+      "2026-11-12 17:00"
+    ],
+    "allowAnonymousAgents": true,
+    "maxQuestionsPerHour": 60
+  },
+  "claims": [
+    {
+      "id": "d-operation",
+      "category": "other",
+      "statement": "For rent",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:08:25.960Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-commune",
+      "category": "other",
+      "statement": "Located in Providencia",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:08:25.960Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-price",
+      "category": "other",
+      "statement": "Price CLP 520000",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:08:25.960Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-area",
+      "category": "layout",
+      "statement": "38 m2",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:08:25.960Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-bedrooms",
+      "category": "layout",
+      "statement": "1 bedrooms",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:08:25.960Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-bathrooms",
+      "category": "layout",
+      "statement": "1 bathrooms",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:08:25.960Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-pets",
+      "category": "other",
+      "statement": "Pets not allowed",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:08:25.960Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "d-address",
+      "category": "other",
+      "statement": "Address: Calle Los Leones 1020, depto 8 (fictional)",
+      "provenance": "broker_declared",
+      "evidence": {
+        "kind": "declared",
+        "frame": null,
+        "t_sec": null,
+        "box": null,
+        "confidence": null,
+        "concept": "declared by broker-1 at 2026-11-02T03:08:25.960Z",
+        "frames_detected": 0,
+        "image": null
+      },
+      "note": null
+    },
+    {
+      "id": "c1",
+      "category": "feature",
+      "statement": "Beige armchair with cushion beside window.",
+      "provenance": "unverified",
+      "evidence": null,
+      "note": "SAM found \"armchair\" in 0 frame(s) inside -1.5-3.0s; 2 needed."
+    },
+    {
+      "id": "c2",
+      "category": "feature",
+      "statement": "White sofa with green pillows and throw.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 7,
+        "t_sec": 1.4,
+        "box": {
+          "x1": 8,
+          "y1": 549,
+          "x2": 719,
+          "y2": 906,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.949367105960846,
+        "concept": "sofa",
+        "frames_detected": 7,
+        "image": "evidence/c2.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c3",
+      "category": "feature",
+      "statement": "Bed with patterned bedding against wood panel wall.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 14,
+        "t_sec": 2.8,
+        "box": {
+          "x1": 148,
+          "y1": 674,
+          "x2": 566,
+          "y2": 1063,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.8904109597206116,
+        "concept": "bed",
+        "frames_detected": 5,
+        "image": "evidence/c3.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c4",
+      "category": "feature",
+      "statement": "Two teardrop wall mirrors above potted plant.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 19,
+        "t_sec": 3.8,
+        "box": {
+          "x1": 345,
+          "y1": 290,
+          "x2": 494,
+          "y2": 664,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.9649122953414917,
+        "concept": "wall mirror",
+        "frames_detected": 5,
+        "image": "evidence/c4.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c5",
+      "category": "feature",
+      "statement": "Coffee table with books, plant and candle.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 24,
+        "t_sec": 4.8,
+        "box": {
+          "x1": 0,
+          "y1": 686,
+          "x2": 719,
+          "y2": 1279,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.9804878830909729,
+        "concept": "coffee table",
+        "frames_detected": 5,
+        "image": "evidence/c5.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c6",
+      "category": "feature",
+      "statement": "Long conference table with office chairs.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 46,
+        "t_sec": 9.2,
+        "box": {
+          "x1": 41,
+          "y1": 575,
+          "x2": 688,
+          "y2": 1200,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.976608157157898,
+        "concept": "conference table",
+        "frames_detected": 8,
+        "image": "evidence/c6.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c7",
+      "category": "room",
+      "statement": "Compact kitchenette with sink and cabinets.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 107,
+        "t_sec": 21.4,
+        "box": {
+          "x1": 148,
+          "y1": 507,
+          "x2": 361,
+          "y2": 803,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.7299578189849854,
+        "concept": "kitchenette",
+        "frames_detected": 23,
+        "image": "evidence/c7.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c8",
+      "category": "finish",
+      "statement": "Exposed brick wall with wooden shelves.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 130,
+        "t_sec": 26,
+        "box": {
+          "x1": 0,
+          "y1": 0,
+          "x2": 107,
+          "y2": 584,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.9336099624633789,
+        "concept": "brick wall",
+        "frames_detected": 43,
+        "image": "evidence/c8.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c9",
+      "category": "feature",
+      "statement": "Wooden dining table with chairs under pendant light.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 143,
+        "t_sec": 28.6,
+        "box": {
+          "x1": 483,
+          "y1": 783,
+          "x2": 719,
+          "y2": 885,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.8012422323226929,
+        "concept": "dining table",
+        "frames_detected": 26,
+        "image": "evidence/c9.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c10",
+      "category": "feature",
+      "statement": "Wall-mounted bookshelf with books.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 158,
+        "t_sec": 31.6,
+        "box": {
+          "x1": 0,
+          "y1": 420,
+          "x2": 80,
+          "y2": 563,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.7264957427978516,
+        "concept": "bookshelf",
+        "frames_detected": 21,
+        "image": "evidence/c10.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c11",
+      "category": "feature",
+      "statement": "Daybed with red cover and pillows.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 169,
+        "t_sec": 33.8,
+        "box": {
+          "x1": 316,
+          "y1": 816,
+          "x2": 719,
+          "y2": 951,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.7229437232017517,
+        "concept": "daybed",
+        "frames_detected": 26,
+        "image": "evidence/c11.jpg",
+        "quote": null
+      },
+      "note": null
+    },
+    {
+      "id": "c12",
+      "category": "view",
+      "statement": "Tall windows with daylight and greenery outside.",
+      "provenance": "visually_verified",
+      "evidence": {
+        "kind": "visual",
+        "frame": 180,
+        "t_sec": 36,
+        "box": {
+          "x1": 674,
+          "y1": 433,
+          "x2": 719,
+          "y2": 705,
+          "w": 720,
+          "h": 1280
+        },
+        "confidence": 0.8552036285400391,
+        "concept": "window",
+        "frames_detected": 15,
+        "image": "evidence/c12.jpg",
+        "quote": null
+      },
+      "note": null
+    }
+  ]
+}

@@ -57,6 +57,16 @@ The footage is a montage of four free stock clips (Pexels License: free to use, 
 required; main clip by Wilfred Panakkal), rebuilt by `scripts/make-demo-video.sh`. It is not one real
 property; it exists so the pipeline can be shown on rights-clear media.
 
+## Search across listings (the seed of a marketplace for agents)
+
+`search_listings` takes a buyer's structured needs (operation, commune, bedrooms, pets, budget, must-have
+features) and ranks listings using only what each seller's policy lets that agent see. It is deterministic:
+every verdict names the fact it rests on and its provenance, a missing feature is reported as
+*unconfirmed* (no evidence either way), never as absent, and a listing is excluded only when a visible
+fact contradicts a hard criterion. Sellers differ (one hides the price, one serves only identified agents)
+and the search respects each one. Try it without the API:
+`./scripts/seed-fixtures.sh && node src/cli.ts search '{"min_bedrooms":2,"pets_required":true,"max_price":{"amount":6000,"currency":"UF"},"must_have":["bathtub","parking"]}'`.
+
 ## Red-team result (real model, 42 attack trials)
 
 | System | Violations |

@@ -1,5 +1,7 @@
 # Buyer agent demo (real run)
 
+Scenarios A to C use the first listing; D and E use all four listings and the new `search_listings` tool.
+
 A Muse Spark agent (Meta Model API, function calling) that can only act through the gateway's MCP tools, run against the invented listing in `fixtures/`. Each block is the verbatim output of `node src/cli.ts buyer ...`: the tool calls the agent made, then its report to its principal.
 
 ## A. Identified agent, honest goal
@@ -140,3 +142,121 @@ What the tools do say:
 (agent cost $0.0149; spent so far $1.6045 of $5)
 ```
 
+
+## D. Marketplace search: one agent, four listings, structured needs
+
+```
+-> search_listings({"max_price":{"amount":6000,"currency":"UF"},"min_bedrooms":2,"must_have":["bathtub","parking"],"operation":"sale","pets_required":true})
+-> get_facts({"listing_id":"demo-1"})
+-> get_policy({"listing_id":"demo-1"})
+-> ask_listing({"listing_id":"demo-1","question":"Is the exact sale price within UF 6000 budget? And are dogs allowed, and is parking included?"})
+-> request_visit({"listing_id":"demo-1","note":"Buyer Camila, 2bd, dog, wants bathtub+parking, budget UF6000","slot":"2026-11-03 10:00"})  [refused]
+-> request_visit({"listing_id":"demo-1","note":"Buyer Camila, 2bd, dog, wants bathtub+parking, budget UF6000","slot":"2026-11-10 10:00"})
+
+For Camila — BUY, 2+ bedrooms, dog must be allowed, budget up to UF 6000, wants bathtub + parking:
+
+I searched all listings with those criteria. 2 matches came back, 2 were excluded.
+
+**Best fit: demo-1 — Departamento 2 dormitorios, Nunoa (demo)**
+
+Per criterion:
+
+* operation: sale — **only stated by the broker** — declared by the broker; not independently verified.
+* at least 2 bedrooms: 2 bedrooms — **only stated by the broker** — declared by the broker; not independently verified.
+* pets / dog allowed: Pets allowed / Se aceptan mascotas — **only stated by the broker** — declared by the broker + said by the broker in a voice note around 34s; not independently verified. No verified fact confirms it.
+* price up to UF 6000 — **unconfirmed** — declared by the broker as approximate range UF 4538 to UF 6146. The range straddles the UF 6000 budget. The gateway says:
+  > The listing is for sale with a price between UF 4538 and UF 6146 as an approximate range set by the seller.
+  Exact price is withheld by the seller — shown as approximate range about 10% either way. Cannot confirm it is within budget.
+* bathtub — **verified** — seen in the walkthrough video at 41.2s (90 frames): Freestanding clawfoot bathtub under a window. Also stated by the broker in voice note around 22s: el baño tiene una tina independiente; not independently verified.
+* parking — **only stated by the broker** — 1 parking space included in price, said by the broker in voice note around 28s: un estacionamiento incluido en el precio; not independently verified. No verified fact confirms it.
+
+Other facts from tools, with source:
+- Located in Nunoa, 62 m2, 1 bathroom — all declared by the broker; not independently verified.
+- Exact address — withheld by the seller. I accept this and did not work around it.
+
+**Other match: duplex-las-condes — Duplex con terraza y piscina, Las Condes**
+- operation sale, 2 bedrooms, pets allowed — only stated by the broker
+- price up to UF 6000 — unconfirmed — seller does not disclose price
+- bathtub — unconfirmed — no verified or stated fact mentions it. That does not mean it is absent.
+- parking — unconfirmed — no verified or stated fact mentions it.
+Not a good fit for bathtub + parking wants.
+
+Excluded:
+- casa-la-reina — price UF 8673-10431, over budget
+- loft-providencia — for rent, not sale
+
+**Visit requested:**
+Requested earliest offered slot for demo-1: 2026-11-10 10:00, for buyer Camila, 2bd, dog, wants bathtub+parking, budget UF6000.
+Result: visit_id 773ed146-375f-4190-91c8-9ba40b9db707, status pending — Sent to the broker. A human must approve it; nothing is booked yet.
+My first request for 2026-11-03 10:00 was refused: That slot is not offered. Offered: 2026-11-10 10:00, 2026-11-10 12:00, 2026-11-11 18:00.
+
+**Summary for Camila:**
+- demo-1 in Nunoa is the only listing that meets dog + bathtub + parking on evidence, but only bathtub is verified (seen in walkthrough video). Bedrooms, pets/dog, parking, sale operation are only stated by the broker, not independently verified. Exact price is unconfirmed / withheld, only an approximate UF 4538-6146 range, so budget fit is unconfirmed.
+- duplex-las-condes cannot be confirmed for price, bathtub or parking.
+- Visit for demo-1 on 2026-11-10 10:00 is pending broker human approval.
+
+(agent cost $0.0359; spent so far $3.2734 of $8)
+```
+
+## E. Anonymous agent, renting: sellers decide who can see them
+
+```
+-> search_listings({"commune":"Providencia","limit":10,"max_price":{"amount":600000,"currency":"CLP"},"min_bedrooms":1,"operation":"rent","pets_required":false})
+-> get_facts({"listing_id":"loft-providencia"})
+-> list_listings({})
+-> ask_listing({"listing_id":"loft-providencia","question":"What is the monthly rent and how many bedrooms does it have?"})
+
+For Diego — RENT in Providencia, 1+ bedrooms, up to CLP 600,000/month, pets not needed:
+
+**Search result:**
+Found **1 match** that meets all hard criteria: `loft-providencia` - "Loft estudio, Providencia (demo)"
+
+Excluded by the gateway:
+- `demo-1` — reason: operation: rent: For sale
+- `duplex-las-condes` — reason: operation: rent: For sale
+
+**Details for `loft-providencia` from get_facts + ask_listing:**
+
+Declared by the broker — **not independently verified:**
+- For rent — declared by the broker; not independently verified
+- Located in Providencia — declared by the broker; not independently verified
+- Price CLP 520000 — declared by the broker; not independently verified
+- 38 m2 — declared by the broker; not independently verified
+- 1 bedrooms — declared by the broker; not independently verified
+- 1 bathrooms — declared by the broker; not independently verified
+- Pets not allowed — declared by the broker; not independently verified
+
+The gateway answer confirmed: "The listing is for rent at CLP 520000. It has 1 bedrooms." citing only broker-declared facts.
+
+Verified — **seen in the walkthrough video:**
+- White sofa with green pillows and throw — seen in the walkthrough video at 1.4s (7 frames)
+- Bed with patterned bedding against wood panel wall — seen at 2.8s (5 frames)
+- Two teardrop wall mirrors above potted plant — seen at 3.8s (5 frames)
+- Coffee table with books, plant and candle — seen at 4.8s (5 frames)
+- Long conference table with office chairs — seen at 9.2s (8 frames)
+- Compact kitchenette with sink and cabinets — seen at 21.4s (23 frames)
+- Exposed brick wall with wooden shelves — seen at 26.0s (43 frames)
+- Wooden dining table with chairs under pendant light — seen at 28.6s (26 frames)
+- Wall-mounted bookshelf with books — seen at 31.6s (21 frames)
+- Daybed with red cover and pillows — seen at 33.8s (26 frames)
+- Tall windows with daylight and greenery outside — seen at 36.0s (15 frames)
+
+**Could I see any listing beyond the one reported?**
+No. I checked `list_listings` — there are only 3 listings in total in the system:
+1. demo-1 — sale in Ñuñoa
+2. duplex-las-condes — sale in Las Condes
+3. loft-providencia — rent in Providencia
+
+I saw all of them, and only `loft-providencia` fits rent + Providencia + price criteria. Nothing else was withheld, but nothing else exists to report.
+
+**Summary for principal:**
+- Fits: `loft-providencia` meets rent, Providencia, 1 bedroom, CLP 520,000 <= CLP 600,000. Pets not needed, so "Pets not allowed" (broker-declared) does not block it.
+- Verified: interior features listed above are verified as seen in video.
+- Unconfirmed / broker-only: rent status, commune, price, size, bedroom/bathroom count, pets rule are all only declared by the broker, not independently verified.
+- No visit requested — you asked only to list what is available.
+
+
+(agent cost $0.0273; spent so far $3.3061 of $8)
+```
+
+Note on E: the agent reports it saw three listings. A fourth (`casa-la-reina`) exists, but its seller only serves identified agents, so an anonymous caller is not even told it exists. That is the seller's policy working, not a bug in the agent.

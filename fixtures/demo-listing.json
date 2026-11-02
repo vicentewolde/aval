@@ -439,36 +439,36 @@
     {
       "id": "s1",
       "category": "layout",
-      "statement": "On the twelfth floor",
+      "statement": "Located on floor 12",
       "provenance": "broker_stated",
       "evidence": {
         "kind": "voice",
         "frame": null,
-        "t_sec": 4.4104265402843605,
+        "t_sec": 4.389622641509434,
         "box": null,
         "confidence": null,
         "concept": null,
         "frames_detected": 0,
         "image": null,
-        "quote": "en el piso doce"
+        "quote": "en el piso piso doce"
       },
       "note": null
     },
     {
       "id": "s2",
       "category": "feature",
-      "statement": "Living-dining room has floor-to-ceiling windows",
+      "statement": "Living dining room has floor-to-ceiling windows",
       "provenance": "broker_stated",
       "evidence": {
         "kind": "voice",
         "frame": null,
-        "t_sec": 8.085781990521328,
+        "t_sec": 8.114150943396227,
         "box": null,
         "confidence": null,
         "concept": null,
         "frames_detected": 0,
         "image": null,
-        "quote": "el living comedor tiene ventanales de piso a techo"
+        "quote": "el living comedor tiene ventanales de piso a a techo"
       },
       "note": null
     },
@@ -480,7 +480,7 @@
       "evidence": {
         "kind": "voice",
         "frame": null,
-        "t_sec": 11.627488151658769,
+        "t_sec": 11.772169811320754,
         "box": null,
         "confidence": null,
         "concept": null,
@@ -509,12 +509,12 @@
     {
       "id": "s6",
       "category": "layout",
-      "statement": "Open kitchen",
+      "statement": "Kitchen is open",
       "provenance": "broker_stated",
       "evidence": {
         "kind": "voice",
         "frame": null,
-        "t_sec": 15.16919431279621,
+        "t_sec": 15.297169811320753,
         "box": null,
         "confidence": null,
         "concept": null,
@@ -527,12 +527,12 @@
     {
       "id": "s7",
       "category": "feature",
-      "statement": "Kitchen has a bar for three stools",
+      "statement": "Kitchen has a bar for 3 stools",
       "provenance": "broker_stated",
       "evidence": {
         "kind": "voice",
         "frame": null,
-        "t_sec": 16.572511848341232,
+        "t_sec": 16.693867924528302,
         "box": null,
         "confidence": null,
         "concept": null,
@@ -545,30 +545,30 @@
     {
       "id": "s8",
       "category": "feature",
-      "statement": "Bedrooms have built-in closets",
+      "statement": "Bedrooms have built-in closet",
       "provenance": "broker_stated",
       "evidence": {
         "kind": "voice",
         "frame": null,
-        "t_sec": 18.844549763033175,
+        "t_sec": 18.955188679245282,
         "box": null,
         "confidence": null,
         "concept": null,
         "frames_detected": 0,
         "image": null,
-        "quote": "los dos dormitorios tienen clóset empotrado"
+        "quote": "los dos dormitorios tienen closet empotrado"
       },
       "note": null
     },
     {
       "id": "s9",
-      "category": "appliance",
-      "statement": "Bathroom has a separate bathtub",
+      "category": "feature",
+      "statement": "Bathroom has an independent bathtub",
       "provenance": "broker_stated",
       "evidence": {
         "kind": "voice",
         "frame": null,
-        "t_sec": 21.784834123222748,
+        "t_sec": 21.88160377358491,
         "box": null,
         "confidence": null,
         "concept": null,
@@ -581,12 +581,12 @@
     {
       "id": "s10",
       "category": "other",
-      "statement": "Building has twenty-four hour concierge",
+      "statement": "Building has 24-hour concierge service",
       "provenance": "broker_stated",
       "evidence": {
         "kind": "voice",
         "frame": null,
-        "t_sec": 24.257345971563982,
+        "t_sec": 24.34245283018868,
         "box": null,
         "confidence": null,
         "concept": null,
@@ -599,12 +599,12 @@
     {
       "id": "s11",
       "category": "other",
-      "statement": "Includes parking",
+      "statement": "1 parking space included in price",
       "provenance": "broker_stated",
       "evidence": {
         "kind": "voice",
         "frame": null,
-        "t_sec": 27.73222748815166,
+        "t_sec": 27.800943396226412,
         "box": null,
         "confidence": null,
         "concept": null,
@@ -617,12 +617,12 @@
     {
       "id": "s12",
       "category": "other",
-      "statement": "Common expenses are forty-two thousand pesos per month",
+      "statement": "Common expenses are 42000 pesos per month",
       "provenance": "broker_stated",
       "evidence": {
         "kind": "voice",
         "frame": null,
-        "t_sec": 30.472037914691946,
+        "t_sec": 30.527830188679246,
         "box": null,
         "confidence": null,
         "concept": null,
@@ -640,7 +640,7 @@
       "evidence": {
         "kind": "voice",
         "frame": null,
-        "t_sec": 34.14739336492891,
+        "t_sec": 34.18584905660377,
         "box": null,
         "confidence": null,
         "concept": null,
