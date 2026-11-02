@@ -132,7 +132,51 @@ export async function ingestVideo(args: {
     claims: [...declaredClaims(args.declared, args.brokerId, now), ...verified],
   };
   args.store.saveListing(listing);
-  const counts = { visually_verified: 0, broker_declared: 0, unverified: 0, subjective: 0 };
+  const counts = {
+    visually_verified: 0,
+    broker_stated: 0,
+    broker_declared: 0,
+    unverified: 0,
+    subjective: 0,
+  };
   for (const c of listing.claims) counts[c.provenance]++;
   return { listing, counts, concepts: concepts.length };
+}
+
+export interface Transcriber {
+  transcribe(wavPath: string, durationSec: number): Promise<import("../meta/client.ts").Transcript>;
+}
+
+/**
+ * Adds what the broker said out loud to an existing listing. Replaces earlier voice claims (ids s1, s2...)
+ * so it can be re-run, and never touches the video claims.
+ */
+export async function ingestVoice(args: {
+  listingId: string;
+  audio: string;
+  store: Store;
+  transcriber: Transcriber;
+  proposer: import("./voice.ts").VoiceProposer;
+  log?: (msg: string) => void;
+}): Promise<{ listing: Listing; added: number; discardedPrivate: number; transcript: string }> {
+  const log = args.log ?? (() => {});
+  const listing = args.store.loadListing(args.listingId);
+  if (!listing) throw new Error(`No such listing: ${args.listingId}`);
+  const { toWav16k } = await import("./media.ts");
+  const { verifyVoiceClaims } = await import("./voice.ts");
+  const dir = args.store.listingDir(args.listingId);
+  const wav = join(dir, "voice.wav");
+  const seconds = await toWav16k(args.audio, wav);
+  log(`voice note: ${seconds.toFixed(1)}s`);
+  const t = await args.transcriber.transcribe(wav, seconds);
+  writeFileSync(join(dir, "transcript.json"), `${JSON.stringify(t, null, 2)}\n`);
+  log(`transcribed ${t.turns.length} turns, ${t.transcript.length} characters`);
+  const proposals = await args.proposer.propose(t.transcript);
+  const { claims, discardedPrivate } = verifyVoiceClaims(
+    proposals.map((p, i) => ({ ...p, id: `s${i + 1}` })),
+    t,
+  );
+  listing.claims = [...listing.claims.filter((c) => !/^s\d+$/.test(c.id)), ...claims];
+  args.store.saveListing(listing);
+  return { listing, added: claims.length, discardedPrivate, transcript: t.transcript };
 }

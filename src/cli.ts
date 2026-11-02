@@ -5,8 +5,9 @@ import { parseArgs } from "node:util";
 import { runBuyerAgent } from "./agent/buyer.ts";
 import { connectAgent } from "./agent/signed-client.ts";
 import { DEFAULT_POLICY, DeclaredSchema, PolicySchema } from "./claims/schema.ts";
-import { ingestVideo } from "./extract/ingest.ts";
+import { ingestVideo, ingestVoice } from "./extract/ingest.ts";
 import { MuseProposer, SamSegmenter } from "./extract/muse.ts";
+import { MuseVoiceProposer } from "./extract/voice.ts";
 import { MuseAnswerModel } from "./gateway/answer-model.ts";
 import { AuditLog, verifyChain } from "./gateway/audit.ts";
 import { GatewayCore, type VisitRecord } from "./gateway/core.ts";
@@ -40,6 +41,8 @@ function client(guard: SpendGuard): MetaClient {
 const USAGE = `aval <command>
 
   ingest <video> --id <id> --declared <file.json> [--policy <file.json>] [--broker <name>]
+  ask <id> "<question>"                    ask the gateway directly (real Muse Spark answering)
+  voice <id> <audio>                       add what the broker said in a voice note (Muse Voice Transcribe)
   report <id>                              evidence report (HTML) for a listing
   serve [--port 8787] [--offline]          MCP gateway for buyer agents
   agent-keygen <id> <name> <operator>      create a signing key and register the agent
@@ -101,6 +104,37 @@ async function main(): Promise<void> {
       } finally {
         await segmenter.close();
       }
+      return;
+    }
+    case "ask": {
+      const [id, ...q] = positionals;
+      if (!id || q.length === 0) throw new Error('ask needs <listing-id> "<question>"');
+      const audit = new AuditLog(join(store.root, "audit.jsonl"));
+      const core = new GatewayCore({ store, model: new MuseAnswerModel(client(guard)), audit });
+      const r = await core.ask({ agentId: "cli", tier: "verified" }, id, q.join(" "));
+      console.log(JSON.stringify(r.ok ? r.data : r, null, 2));
+      return;
+    }
+    case "voice": {
+      const [id, audio] = positionals;
+      if (!id || !audio) throw new Error("voice needs <listing-id> <audio file>");
+      const c = client(guard);
+      const r = await ingestVoice({
+        listingId: id,
+        audio,
+        store,
+        transcriber: { transcribe: (wav, secs) => c.transcribe(wav, secs) },
+        proposer: new MuseVoiceProposer(c),
+        log: (m) => console.log(m),
+      });
+      const voice = r.listing.claims.filter((x) => /^s\d+$/.test(x.id));
+      for (const x of voice)
+        console.log(
+          `${x.id.padEnd(4)} ${x.provenance.padEnd(14)} ${x.statement}${x.evidence?.quote ? `   <- "${x.evidence.quote}"` : ""}${x.note ? `   (${x.note})` : ""}`,
+        );
+      console.log(
+        `\n${r.added} voice claims kept, ${r.discardedPrivate} private discarded. spent $${guard.spentUsd.toFixed(4)} of $${guard.budgetUsd}`,
+      );
       return;
     }
     case "report": {

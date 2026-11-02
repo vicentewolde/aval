@@ -12,7 +12,7 @@ export interface Caller {
 export interface VisibleFact {
   id: string;
   statement: string;
-  provenance: "visually_verified" | "broker_declared";
+  provenance: "visually_verified" | "broker_stated" | "broker_declared";
   evidence: string;
 }
 
@@ -60,6 +60,10 @@ function evidenceText(c: Claim): string {
   if (c.evidence?.kind === "visual") {
     const t = c.evidence.t_sec === null ? "" : ` at ${c.evidence.t_sec.toFixed(1)}s`;
     return `seen in the walkthrough video${t} (${c.evidence.frames_detected} frames)`;
+  }
+  if (c.evidence?.kind === "voice") {
+    const t = c.evidence.t_sec === null ? "" : ` around ${c.evidence.t_sec.toFixed(0)}s`;
+    return `said by the broker in a voice note${t}: "${c.evidence.quote ?? ""}"; not independently verified`;
   }
   return "declared by the broker; not independently verified";
 }

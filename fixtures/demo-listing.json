@@ -435,6 +435,220 @@
         "image": "evidence/c12.jpg"
       },
       "note": null
+    },
+    {
+      "id": "s1",
+      "category": "layout",
+      "statement": "On the twelfth floor",
+      "provenance": "broker_stated",
+      "evidence": {
+        "kind": "voice",
+        "frame": null,
+        "t_sec": 4.4104265402843605,
+        "box": null,
+        "confidence": null,
+        "concept": null,
+        "frames_detected": 0,
+        "image": null,
+        "quote": "en el piso doce"
+      },
+      "note": null
+    },
+    {
+      "id": "s2",
+      "category": "feature",
+      "statement": "Living-dining room has floor-to-ceiling windows",
+      "provenance": "broker_stated",
+      "evidence": {
+        "kind": "voice",
+        "frame": null,
+        "t_sec": 8.085781990521328,
+        "box": null,
+        "confidence": null,
+        "concept": null,
+        "frames_detected": 0,
+        "image": null,
+        "quote": "el living comedor tiene ventanales de piso a techo"
+      },
+      "note": null
+    },
+    {
+      "id": "s3",
+      "category": "view",
+      "statement": "Faces north",
+      "provenance": "broker_stated",
+      "evidence": {
+        "kind": "voice",
+        "frame": null,
+        "t_sec": 11.627488151658769,
+        "box": null,
+        "confidence": null,
+        "concept": null,
+        "frames_detected": 0,
+        "image": null,
+        "quote": "mira hacia el norte"
+      },
+      "note": null
+    },
+    {
+      "id": "s4",
+      "category": "condition",
+      "statement": "Very bright",
+      "provenance": "subjective",
+      "evidence": null,
+      "note": "Taste word: never stated as fact."
+    },
+    {
+      "id": "s5",
+      "category": "condition",
+      "statement": "Very quiet",
+      "provenance": "subjective",
+      "evidence": null,
+      "note": "Taste word: never stated as fact."
+    },
+    {
+      "id": "s6",
+      "category": "layout",
+      "statement": "Open kitchen",
+      "provenance": "broker_stated",
+      "evidence": {
+        "kind": "voice",
+        "frame": null,
+        "t_sec": 15.16919431279621,
+        "box": null,
+        "confidence": null,
+        "concept": null,
+        "frames_detected": 0,
+        "image": null,
+        "quote": "la cocina es abierta"
+      },
+      "note": null
+    },
+    {
+      "id": "s7",
+      "category": "feature",
+      "statement": "Kitchen has a bar for three stools",
+      "provenance": "broker_stated",
+      "evidence": {
+        "kind": "voice",
+        "frame": null,
+        "t_sec": 16.572511848341232,
+        "box": null,
+        "confidence": null,
+        "concept": null,
+        "frames_detected": 0,
+        "image": null,
+        "quote": "con una barra para tres tabureros"
+      },
+      "note": null
+    },
+    {
+      "id": "s8",
+      "category": "feature",
+      "statement": "Bedrooms have built-in closets",
+      "provenance": "broker_stated",
+      "evidence": {
+        "kind": "voice",
+        "frame": null,
+        "t_sec": 18.844549763033175,
+        "box": null,
+        "confidence": null,
+        "concept": null,
+        "frames_detected": 0,
+        "image": null,
+        "quote": "los dos dormitorios tienen clóset empotrado"
+      },
+      "note": null
+    },
+    {
+      "id": "s9",
+      "category": "appliance",
+      "statement": "Bathroom has a separate bathtub",
+      "provenance": "broker_stated",
+      "evidence": {
+        "kind": "voice",
+        "frame": null,
+        "t_sec": 21.784834123222748,
+        "box": null,
+        "confidence": null,
+        "concept": null,
+        "frames_detected": 0,
+        "image": null,
+        "quote": "el baño tiene una tina independiente"
+      },
+      "note": null
+    },
+    {
+      "id": "s10",
+      "category": "other",
+      "statement": "Building has twenty-four hour concierge",
+      "provenance": "broker_stated",
+      "evidence": {
+        "kind": "voice",
+        "frame": null,
+        "t_sec": 24.257345971563982,
+        "box": null,
+        "confidence": null,
+        "concept": null,
+        "frames_detected": 0,
+        "image": null,
+        "quote": "el edificio tiene conserje las veinticuatro horas"
+      },
+      "note": null
+    },
+    {
+      "id": "s11",
+      "category": "other",
+      "statement": "Includes parking",
+      "provenance": "broker_stated",
+      "evidence": {
+        "kind": "voice",
+        "frame": null,
+        "t_sec": 27.73222748815166,
+        "box": null,
+        "confidence": null,
+        "concept": null,
+        "frames_detected": 0,
+        "image": null,
+        "quote": "un estacionamiento incluido en el precio"
+      },
+      "note": null
+    },
+    {
+      "id": "s12",
+      "category": "other",
+      "statement": "Common expenses are forty-two thousand pesos per month",
+      "provenance": "broker_stated",
+      "evidence": {
+        "kind": "voice",
+        "frame": null,
+        "t_sec": 30.472037914691946,
+        "box": null,
+        "confidence": null,
+        "concept": null,
+        "frames_detected": 0,
+        "image": null,
+        "quote": "Los gastos comunes son cuarenta y dos mil pesos al mes"
+      },
+      "note": null
+    },
+    {
+      "id": "s13",
+      "category": "other",
+      "statement": "Pets are allowed",
+      "provenance": "broker_stated",
+      "evidence": {
+        "kind": "voice",
+        "frame": null,
+        "t_sec": 34.14739336492891,
+        "box": null,
+        "confidence": null,
+        "concept": null,
+        "frames_detected": 0,
+        "image": null,
+        "quote": "Se aceptan mascotas"
+      },
+      "note": null
     }
   ]
 }

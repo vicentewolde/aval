@@ -9,6 +9,7 @@ const esc = (s: string): string =>
 
 const BADGE: Record<Claim["provenance"], [string, string]> = {
   visually_verified: ["#0a7d4b", "verified by video"],
+  broker_stated: ["#1565c0", "said by broker (voice note)"],
   broker_declared: ["#555", "declared by broker"],
   unverified: ["#b26a00", "held back: no evidence"],
   subjective: ["#8a3ffc", "never stated"],
@@ -19,17 +20,20 @@ function row(c: Claim): string {
   const ev =
     c.evidence?.kind === "visual"
       ? `${c.evidence.image ? `<a href="${esc(c.evidence.image)}"><img src="${esc(c.evidence.image)}" alt="evidence for ${esc(c.id)}"></a>` : ""}<div class="m">${esc(c.evidence.concept ?? "")} · ${c.evidence.frames_detected} frames · t=${c.evidence.t_sec?.toFixed(1)}s · conf ${c.evidence.confidence ?? "n/a"}</div>`
-      : c.note
-        ? `<div class="m">${esc(c.note)}</div>`
-        : "";
+      : c.evidence?.kind === "voice"
+        ? `<div class="m">"${esc(c.evidence.quote ?? "")}" · around ${c.evidence.t_sec?.toFixed(0)}s of the note</div>`
+        : c.note
+          ? `<div class="m">${esc(c.note)}</div>`
+          : "";
   return `<tr><td><code>${esc(c.id)}</code></td><td>${esc(c.statement)}</td><td><span class="b" style="background:${color}">${label}</span></td><td>${ev}</td></tr>`;
 }
 
 const ORDER: Record<Claim["provenance"], number> = {
   visually_verified: 0,
-  unverified: 1,
-  subjective: 2,
-  broker_declared: 3,
+  broker_stated: 1,
+  unverified: 2,
+  subjective: 3,
+  broker_declared: 4,
 };
 
 function card(c: Claim): string {
@@ -39,7 +43,13 @@ function card(c: Claim): string {
 
 /** A single static page: every claim, its proof, and exactly what a buyer's agent would be told. */
 export function renderReport(listing: Listing): string {
-  const counts = { visually_verified: 0, broker_declared: 0, unverified: 0, subjective: 0 };
+  const counts = {
+    visually_verified: 0,
+    broker_stated: 0,
+    broker_declared: 0,
+    unverified: 0,
+    subjective: 0,
+  };
   for (const c of listing.claims) counts[c.provenance]++;
   const agent = visibleFacts(listing, { agentId: null, tier: "anonymous" });
   return `<!doctype html><meta charset="utf-8"><title>Aval evidence report: ${esc(listing.id)}</title>
@@ -49,7 +59,7 @@ img{max-width:280px;border-radius:6px;display:block}.b{color:#fff;border-radius:
 .m{color:#666;font-size:12px;margin-top:4px}.k{display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0}.k div{background:#f4f4f4;border-radius:8px;padding:.6rem 1rem}
 .k b{font-size:1.5rem;display:block}.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}figure{margin:0}figure img{width:100%;aspect-ratio:9/16;object-fit:contain;background:#111;max-width:100%}figcaption{font-size:12px;margin-top:6px}figcaption span{display:block;color:#666}h2{margin-top:2rem}</style>
 <h1>${esc(listing.declared.title)}</h1><p>${esc(listing.declared.commune)} · ${listing.declared.operation} · listing <code>${esc(listing.id)}</code></p>
-<div class="k"><div><b>${counts.visually_verified}</b>verified by video</div><div><b>${counts.broker_declared}</b>declared by broker</div><div><b>${counts.unverified}</b>held back</div><div><b>${counts.subjective}</b>never stated</div></div>
+<div class="k"><div><b>${counts.visually_verified}</b>verified by video</div><div><b>${counts.broker_stated}</b>said in voice note</div><div><b>${counts.broker_declared}</b>declared by broker</div><div><b>${counts.unverified}</b>held back</div><div><b>${counts.subjective}</b>never stated</div></div>
 <h2>The proof: what the video shows (each box is what SAM 3.1 found)</h2>
 <div class="g">${listing.claims.map(card).join("")}</div>
 <h2>Every claim, held back first (broker view)</h2>

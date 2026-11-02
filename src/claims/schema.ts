@@ -3,12 +3,14 @@ import { z } from "zod";
 /**
  * Where a statement comes from. Only the first two may ever be stated as fact to an agent.
  *  - visually_verified: a model proposed it AND SAM 3.1 found the object in the claimed time window.
+ *  - broker_stated:     the broker said it in a voice note; the transcript quote is the evidence, nothing proves it is true.
  *  - broker_declared:   the broker entered it (price, m2, rooms...); it is on record, not proven by video.
  *  - unverified:        proposed but no evidence found; held back for the broker.
  *  - subjective:        taste words ("bright", "quiet"); never asserted.
  */
 export const Provenance = z.enum([
   "visually_verified",
+  "broker_stated",
   "broker_declared",
   "unverified",
   "subjective",
@@ -17,6 +19,7 @@ export type Provenance = z.infer<typeof Provenance>;
 
 export const ASSERTABLE: ReadonlySet<Provenance> = new Set([
   "visually_verified",
+  "broker_stated",
   "broker_declared",
 ]);
 
@@ -47,7 +50,7 @@ export type ClaimProposal = z.infer<typeof ClaimProposalSchema>;
 export const ProposalListSchema = z.object({ claims: z.array(ClaimProposalSchema) });
 
 export const EvidenceSchema = z.object({
-  kind: z.enum(["visual", "declared"]),
+  kind: z.enum(["visual", "declared", "voice"]),
   frame: z.number().int().nullable(),
   t_sec: z.number().nullable(),
   box: z
@@ -65,6 +68,8 @@ export const EvidenceSchema = z.object({
   frames_detected: z.number().int(),
   /** Path of the annotated frame, relative to the listing folder. */
   image: z.string().nullable(),
+  /** Voice evidence: the exact words the broker said (Spanish), found verbatim in the transcript. */
+  quote: z.string().nullable().optional(),
 });
 export type Evidence = z.infer<typeof EvidenceSchema>;
 

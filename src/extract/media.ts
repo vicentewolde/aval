@@ -99,3 +99,38 @@ export async function extractEvidenceFrame(
   args.push("-q:v", "3", output);
   await run("ffmpeg", args);
 }
+
+export const MAX_VOICE_SECONDS = 600;
+
+/** The transcription API wants mono 16-bit PCM WAV at 16 kHz and at most 10 minutes. */
+export async function toWav16k(input: string, output: string): Promise<number> {
+  await run("ffmpeg", [
+    "-y",
+    "-v",
+    "error",
+    "-i",
+    input,
+    "-vn",
+    "-ar",
+    "16000",
+    "-ac",
+    "1",
+    "-c:a",
+    "pcm_s16le",
+    output,
+  ]);
+  const { stdout } = await run("ffprobe", [
+    "-v",
+    "error",
+    "-show_entries",
+    "format=duration",
+    "-of",
+    "csv=p=0",
+    output,
+  ]);
+  const d = Number(stdout.trim());
+  if (!Number.isFinite(d)) throw new Error(`Not readable audio: ${input}`);
+  if (d > MAX_VOICE_SECONDS)
+    throw new Error(`Audio is ${Math.round(d)}s; the limit is ${MAX_VOICE_SECONDS}s.`);
+  return d;
+}

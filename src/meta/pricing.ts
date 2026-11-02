@@ -44,3 +44,7 @@ export function samVideoCostUsd(frames: number): number {
 export function samImageCostUsd(images: number): number {
   return (images / 1000) * SAM_USD_PER_1000_IMAGES;
 }
+
+export function voiceCostUsd(seconds: number): number {
+  return (seconds / 3600) * VOICE_USD_PER_HOUR;
+}

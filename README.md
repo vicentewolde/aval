@@ -4,7 +4,7 @@
 keeps the proof of each one. Buyer agents (Muse, ChatGPT, Gemini, any MCP client) query the listing
 through a gateway that only says what is proven, only to agents that identify themselves, and only
 within the rules the seller set. Built for the Meta Global AI Developer Hackathon (Meta Model API:
-Muse Spark + SAM 3.1).
+Muse Spark + SAM 3.1 + Muse Voice Transcribe).
 
 > **Status: work in progress during the hackathon (submission 2026-11-04).** This repository was
 > created on 2026-11-01, inside the hackathon window, and contains no code copied from any earlier
@@ -18,6 +18,7 @@ Muse Spark + SAM 3.1).
 | Provenance | Meaning | Can an agent be told it? |
 |---|---|---|
 | `visually_verified` | Muse Spark proposed it **and** SAM 3.1 found the object in the claimed time window | yes |
+| `broker_stated` | the broker said it in a voice note (Muse Voice Transcribe); the exact Spanish quote is the evidence, and every number must be readable from it | yes, with the quote |
 | `broker_declared` | the seller entered it (price, m2, rooms); on record, not proven by video | yes, labelled as declared |
 | `unverified` | proposed, but no evidence found | no, held for the broker |
 | `subjective` | taste words ("bright", "quiet") | never |
@@ -29,6 +30,9 @@ repeats an unverified adjective puts the seller on the hook.
 ## How it works
 
 ```
+voice note ──Muse Voice Transcribe──> transcript ──Muse Spark──> claims, each with the broker's exact words;
+   kept only if the quote is really in the transcript and its numbers match; secrets are discarded, never stored
+
 video ──ffmpeg──> normalized clip (720p, 5 fps)
    │
    ├─ Muse Spark (video understanding, structured output) ──> claim PROPOSALS with time windows

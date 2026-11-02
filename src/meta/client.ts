@@ -7,6 +7,7 @@ import {
   type TokenModel,
   tokenCostUsd,
   type Usage,
+  voiceCostUsd,
 } from "./pricing.ts";
 import { parseSamLine, type SamFrame } from "./sam.ts";
 
@@ -22,6 +23,12 @@ export class MetaApiError extends Error {
     this.body = body;
     this.retryable = retryable;
   }
+}
+
+export interface Transcript {
+  transcript: string;
+  durationMs: number;
+  turns: Array<{ turnId: number; startMs: number; endMs: number; transcript: string }>;
 }
 
 export interface ToolTurn {
@@ -200,6 +207,47 @@ export class MetaClient {
       );
     }
     return { text, usage, costUsd };
+  }
+
+  /**
+   * Speech to text with Muse Voice Transcribe. One turn per detected speech segment, with timing,
+   * so a quote can be tied to a moment in the recording. Billed per audio hour ($0.18).
+   */
+  async transcribe(wavPath: string, durationSec: number, label = "voice"): Promise<Transcript> {
+    const cost = voiceCostUsd(durationSec);
+    this.opts.guard.check(cost, label);
+    const form = new FormData();
+    form.set(
+      "request",
+      new Blob(
+        [
+          JSON.stringify({
+            model: "muse-voice-transcribe-1.0",
+            audioEncoding: "WAV",
+            mode: "ENDPOINTING",
+            languageBias: ["Spanish"],
+          }),
+        ],
+        { type: "application/json" },
+      ),
+    );
+    form.set("audio", new Blob([readFileSync(wavPath)], { type: "audio/wav" }), basename(wavPath));
+    const res = await this.send(`${this.baseUrl}/asr/transcribe`, {
+      method: "POST",
+      headers: this.headers({ accept: "application/json" }),
+      body: form,
+    });
+    const json = (await res.json()) as {
+      transcript?: string;
+      audioDurationMs?: number;
+      turns?: Array<{ turnId: number; startMs: number; endMs: number; transcript: string }>;
+    };
+    this.opts.guard.record(cost, label);
+    return {
+      transcript: json.transcript ?? "",
+      durationMs: json.audioDurationMs ?? Math.round(durationSec * 1000),
+      turns: json.turns ?? [],
+    };
   }
 
   /**

@@ -91,6 +91,7 @@ export function verifyProposal(
     concept: p.concept,
     frames_detected: frames,
     image: null,
+    quote: null,
   };
   return { ...base, provenance: "visually_verified", evidence, note: null };
 }
