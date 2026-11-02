@@ -12,6 +12,7 @@ import { AgentRegistry, signRequest } from "../gateway/identity.ts";
 import { OfflineAnswerModel } from "../gateway/offline-model.ts";
 import { startGateway } from "../gateway/server.ts";
 import { Store } from "../store.ts";
+import { runNegotiationChecks } from "./negotiation-checks.ts";
 
 export interface CheckResult {
   category: string;
@@ -365,5 +366,6 @@ export async function runToolChecks(): Promise<CheckResult[]> {
   } finally {
     http.close();
   }
+  results.push(...(await runNegotiationChecks()));
   return results;
 }

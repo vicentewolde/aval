@@ -2,10 +2,10 @@
 
 Deterministic attacks on the gateway itself: who can tell what exists, how much a caller may ask, how
 identities are forged, what a hostile seller can plant, and whether the audit trail survives. No model and
-no spend; the same 38 checks run in the test suite (`test/redteam-tools.test.ts`). Regenerate with
+no spend; the same 74 checks run in the test suite (`test/redteam-tools.test.ts`). Regenerate with
 `node scripts/redteam-tools.ts`.
 
-**Result: 38 of 38 attacks failed to get through.**
+**Result: 74 of 74 attacks failed to get through.**
 
 | Category | Checks | Passed |
 |---|---|---|
@@ -16,6 +16,7 @@ no spend; the same 38 checks run in the test suite (`test/redteam-tools.test.ts`
 | hostile seller | 10 | 10 |
 | hostile caller | 2 | 2 |
 | audit | 2 | 2 |
+| negotiation | 36 | 36 |
 
 ## existence
 
@@ -75,6 +76,45 @@ no spend; the same 38 checks run in the test suite (`test/redteam-tools.test.ts`
 
 - PASS the audit chain is intact after 430 entries of attacks
 - PASS editing one line of the log is detected _(line 4 had nothing to change)_
+
+## negotiation
+
+- PASS a buyer agent that raises its own maximum after signing is refused
+- PASS a mandate signed by someone other than the named principal is refused
+- PASS an expired mandate is refused
+- PASS a mandate issued to another agent cannot be used
+- PASS an agent with no mandate cannot open a negotiation
+- PASS across a whole negotiation, nothing the buyer receives contains the seller's floor
+- PASS nor the seller's asking price as a limit field
+- PASS a limit smuggled into the rationale as digits is rejected _(RATIONALE_REJECTED)_
+- PASS a limit smuggled into the rationale as spelled out in English is rejected _(RATIONALE_REJECTED)_
+- PASS a limit smuggled into the rationale as spelled out in Spanish is rejected _(RATIONALE_REJECTED)_
+- PASS a limit smuggled into the rationale as fullwidth digits is rejected _(RATIONALE_REJECTED)_
+- PASS a limit smuggled into the rationale as Arabic-Indic digits is rejected _(RATIONALE_REJECTED)_
+- PASS a limit smuggled into the rationale as digits split by control characters is rejected _(RATIONALE_REJECTED)_
+- PASS a hijacked seller agent offering far below the floor is overruled by the engine _([4913,4913,4913])_
+- PASS an instruction planted in the buyer's rationale cannot make the seller accept below its floor _(open)_
+- PASS an offer above the buyer's own maximum is refused
+- PASS a valid offer goes through
+- PASS taking back a concession (offering less than before) is refused
+- PASS closing days outside the seller's range are refused
+- PASS a condition the principal never allowed is refused
+- PASS the round limit of the mandate holds
+- PASS walking away closes the negotiation _(walked_away)_
+- PASS a closed negotiation accepts no further moves
+- PASS another agent cannot read someone else's negotiation
+- PASS another agent cannot act in it
+- PASS a guessed negotiation id looks the same as a missing one
+- PASS a path-traversal id is just 'no such negotiation'
+- PASS the stored move log verifies
+- PASS editing one stored move breaks the hash chain
+- PASS a deal produces a term sheet
+- PASS the term sheet is marked non-binding and carries the notice
+- PASS one signature does not complete it
+- PASS the broker's approval signed with the buyer's key does not count
+- PASS the buyer's approval cannot be replayed as the seller's
+- PASS an approval of one term sheet does not carry over to an altered one
+- PASS both signatures complete it
 
 ## Holes this red-team found in the first version (all fixed)
 
