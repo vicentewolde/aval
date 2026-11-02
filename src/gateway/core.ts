@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import type { Action } from "../negotiation/engine.ts";
+import type { NegotiationService } from "../negotiation/service.ts";
 import type { Store } from "../store.ts";
 import type { AnswerModel, AnswerResult } from "./answer.ts";
 import { answerQuestion } from "./answer.ts";
@@ -29,6 +31,7 @@ interface Deps {
   store: Store;
   model: AnswerModel;
   audit: AuditLog;
+  negotiation?: NegotiationService;
   now?: () => Date;
 }
 
@@ -131,6 +134,52 @@ export class GatewayCore {
       async () => {
         this.rateLimit(caller, SEARCHES_PER_HOUR, this.searches);
         return { value: searchListings(this.deps.store.listListings(), caller, criteria) };
+      },
+    );
+  }
+
+  /** Negotiation is only for identified agents holding a signed mandate; the listing check keeps existence private. */
+  negotiationStart(caller: Caller, listingId: string) {
+    return this.guarded(caller, "negotiation_start", listingId, async () => {
+      if (caller.tier !== "verified" || !caller.agentId)
+        throw new PolicyDenied(
+          "AGENT_NOT_IDENTIFIED",
+          "Negotiation needs an identified agent with a signed mandate.",
+        );
+      this.require(listingId, caller);
+      const r = this.deps.negotiation?.start(caller.agentId, listingId);
+      if (!r)
+        throw new PolicyDenied(
+          "NEGOTIATION_NOT_AVAILABLE",
+          "This seller has not enabled negotiation.",
+        );
+      if (!r.ok) throw new PolicyDenied(r.code, r.message);
+      return { value: r.view };
+    });
+  }
+
+  negotiationAct(caller: Caller, tool: string, negotiationId: string, action: Action | null) {
+    return this.guarded(
+      caller,
+      tool,
+      `neg=${negotiationId}${action?.type === "offer" ? ` offer price=${action.price}` : action ? ` ${action.type}` : ""}`,
+      async () => {
+        if (caller.tier !== "verified" || !caller.agentId)
+          throw new PolicyDenied(
+            "AGENT_NOT_IDENTIFIED",
+            "Negotiation needs an identified agent with a signed mandate.",
+          );
+        const svc = this.deps.negotiation;
+        if (!svc)
+          throw new PolicyDenied(
+            "NEGOTIATION_NOT_AVAILABLE",
+            "Negotiation is not enabled on this gateway.",
+          );
+        const r = action
+          ? await svc.act(caller.agentId, negotiationId, action)
+          : svc.status(caller.agentId, negotiationId);
+        if (!r.ok) throw new PolicyDenied(r.code, r.message);
+        return { value: r.view };
       },
     );
   }

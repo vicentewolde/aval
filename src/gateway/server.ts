@@ -68,6 +68,99 @@ function buildMcp(
     },
     async (criteria) => asText(await core.search(who("search_listings"), criteria)),
   );
+  const negId = z.string().regex(/^neg-[0-9a-f]{8}$/);
+  const rationale = z.string().max(240).default("");
+  server.registerTool(
+    "negotiation_start",
+    {
+      description:
+        "Open (or resume) a price negotiation with the seller's agent on a listing. Requires an identified agent AND a mandate signed by your principal. Returns your own limits and the negotiation id. The seller's limits are never shown.",
+      inputSchema: { listing_id: listingId },
+    },
+    async ({ listing_id }) =>
+      asText(await core.negotiationStart(who("negotiation_start"), listing_id)),
+  );
+  server.registerTool(
+    "negotiation_offer",
+    {
+      description:
+        "Make an offer. Figures go in price and closing_days only: the rationale is free text for the other side but may contain NO digits and NO number words, or it is rejected. Offers above your mandate, offers that go backwards, and terms outside your mandate are refused by the engine. The seller's agent answers in the same call.",
+      inputSchema: {
+        negotiation_id: negId,
+        price: z.number().positive().max(1_000_000_000),
+        closing_days: z.number().int().min(0).max(365),
+        conditions: z
+          .array(
+            z.enum([
+              "subject_to_title_review",
+              "subject_to_financing_approval",
+              "furnishings_included",
+            ]),
+          )
+          .max(3)
+          .default([]),
+        rationale,
+      },
+    },
+    async ({ negotiation_id, price, closing_days, conditions, rationale }) =>
+      asText(
+        await core.negotiationAct(who("negotiation_offer"), "negotiation_offer", negotiation_id, {
+          type: "offer",
+          price,
+          closing_days,
+          conditions,
+          rationale,
+        }),
+      ),
+  );
+  server.registerTool(
+    "negotiation_accept",
+    {
+      description:
+        "Accept the seller's current position, if it is within your mandate. Produces a preliminary, non-binding term sheet that both principals must approve.",
+      inputSchema: { negotiation_id: negId, rationale },
+    },
+    async ({ negotiation_id, rationale }) =>
+      asText(
+        await core.negotiationAct(who("negotiation_accept"), "negotiation_accept", negotiation_id, {
+          type: "accept",
+          rationale,
+        }),
+      ),
+  );
+  server.registerTool(
+    "negotiation_walk_away",
+    {
+      description: "End the negotiation without a deal.",
+      inputSchema: { negotiation_id: negId, rationale },
+    },
+    async ({ negotiation_id, rationale }) =>
+      asText(
+        await core.negotiationAct(
+          who("negotiation_walk_away"),
+          "negotiation_walk_away",
+          negotiation_id,
+          { type: "walk_away", rationale },
+        ),
+      ),
+  );
+  server.registerTool(
+    "negotiation_status",
+    {
+      description:
+        "The state of a negotiation you opened: moves so far, whose turn it is, rounds left, the outcome.",
+      inputSchema: { negotiation_id: negId },
+    },
+    async ({ negotiation_id }) =>
+      asText(
+        await core.negotiationAct(
+          who("negotiation_status"),
+          "negotiation_status",
+          negotiation_id,
+          null,
+        ),
+      ),
+  );
   server.registerTool(
     "get_facts",
     {

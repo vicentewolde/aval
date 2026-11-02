@@ -21,6 +21,11 @@ export const MCP_TOOLS = [
   "get_policy",
   "ask_listing",
   "request_visit",
+  "negotiation_start",
+  "negotiation_offer",
+  "negotiation_accept",
+  "negotiation_walk_away",
+  "negotiation_status",
 ] as const;
 
 const esc = (s: string): string =>

@@ -19,6 +19,17 @@ import { CriteriaSchema } from "./gateway/search.ts";
 import { startGateway } from "./gateway/server.ts";
 import { MetaClient } from "./meta/client.ts";
 import {
+  type BuyerMandate,
+  CONDITIONS,
+  newSalt,
+  PrincipalRegistry,
+  type SellerMandate,
+  signMandate,
+} from "./negotiation/mandate.ts";
+import { MuseSeller, scriptedSeller } from "./negotiation/seller-agent.ts";
+import { NegotiationService } from "./negotiation/service.ts";
+import { approvalStatus, approveTermSheet } from "./negotiation/termsheet.ts";
+import {
   type FactProof,
   issuePassport,
   type Passport,
@@ -63,6 +74,9 @@ const USAGE = `aval <command>
   edit <listing> <claim> "<new wording>"   broker correction (feeds the taste module)
   taste                                    what the corrections taught, and eval cases
   buyer "<goal>" [--as <agent-id>|--anonymous] [--url <mcp-url>]   a Muse Spark buyer agent using the gateway
+  principal keygen <id> <name>             a human who signs mandates and approvals
+  mandate seller|buyer <listing> --principal <id> ...   what a principal authorizes an agent to do (signed)
+  negotiation list|show <id>|approve <id> --as <principal>   negotiations, term sheets, human approval
   passport init|issue <id>|verify <file>|prove <file> <fact>|verify-proof <file>   signed, offline-verifiable listing record
   budget                                   spend so far against the ceiling
   audit-verify                             check the audit log's hash chain`;
@@ -83,6 +97,17 @@ async function main(): Promise<void> {
       port: { type: "string", default: "8787" },
       offline: { type: "boolean", default: false },
       as: { type: "string" },
+      principal: { type: "string" },
+      agent: { type: "string" },
+      asking: { type: "string" },
+      floor: { type: "string" },
+      target: { type: "string" },
+      max: { type: "string" },
+      rounds: { type: "string", default: "5" },
+      days: { type: "string", default: "30-90" },
+      conditions: { type: "string", default: "subject_to_title_review" },
+      "valid-days": { type: "string", default: "30" },
+      currency: { type: "string", default: "UF" },
       row: { type: "string" },
       video: { type: "string" },
       anonymous: { type: "boolean", default: false },
@@ -253,7 +278,23 @@ async function main(): Promise<void> {
       const audit = new AuditLog(join(store.root, "audit.jsonl"));
       const model = values.offline ? new OfflineAnswerModel() : new MuseAnswerModel(client(guard));
       const registry = AgentRegistry.fromFile(join(store.root, "agents.json"));
-      const core = new GatewayCore({ store, model, audit });
+      const principals = PrincipalRegistry.fromFile(join(store.root, "principals.json"));
+      const issuerKeyPath = join(store.root, "keys", "issuer.pem");
+      const issuerForDeals = existsSync(issuerKeyPath)
+        ? { id: "aval-issuer", privateKeyPem: readFileSync(issuerKeyPath, "utf8") }
+        : undefined;
+      const negotiation = new NegotiationService({
+        store,
+        principals,
+        seller: values.offline ? scriptedSeller() : new MuseSeller(client(guard)).respond,
+        attachments: (listingId) => {
+          const l = store.loadListing(listingId);
+          return l && issuerForDeals
+            ? { passport_root: issuePassport(l, issuerForDeals).header.merkle_root }
+            : {};
+        },
+      });
+      const core = new GatewayCore({ store, model, audit, negotiation });
       const port = Number(values.port);
       const issuerKey = join(store.root, "keys", "issuer.pem");
       await startGateway(
@@ -358,6 +399,158 @@ async function main(): Promise<void> {
         await mcp.close();
       }
       return;
+    }
+    case "principal": {
+      const [sub, id, ...nameParts] = positionals;
+      if (sub !== "keygen" || !id || nameParts.length === 0)
+        throw new Error("principal keygen <id> <name>");
+      const keyPath = join(store.root, "keys", `principal-${id}.pem`);
+      if (existsSync(keyPath)) throw new Error("that principal already has a key");
+      const { publicKey, privateKey } = genKeys("ed25519");
+      mkdirSync(join(store.root, "keys"), { recursive: true });
+      writeFileSync(keyPath, privateKey.export({ type: "pkcs8", format: "pem" }), { mode: 0o600 });
+      const regPath = join(store.root, "principals.json");
+      const reg = existsSync(regPath)
+        ? (JSON.parse(readFileSync(regPath, "utf8")) as Array<{
+            id: string;
+            name: string;
+            publicKey: string;
+          }>)
+        : [];
+      reg.push({
+        id,
+        name: nameParts.join(" "),
+        publicKey: publicKey.export({ type: "spki", format: "der" }).toString("base64"),
+      });
+      writeFileSync(regPath, `${JSON.stringify(reg, null, 2)}\n`);
+      console.log(
+        `principal ${id} registered; private key in .aval/keys/principal-${id}.pem (never commit it)`,
+      );
+      return;
+    }
+    case "mandate": {
+      const [kind, listingId] = positionals;
+      if ((kind !== "seller" && kind !== "buyer") || !listingId || !values.principal)
+        throw new Error("mandate seller|buyer <listing> --principal <id> ...");
+      const pem = readFileSync(
+        join(store.root, "keys", `principal-${values.principal}.pem`),
+        "utf8",
+      );
+      const [d0, d1] = values.days.split("-").map(Number);
+      const now = new Date();
+      const base = {
+        id: `m-${newSalt().slice(0, 8)}`,
+        listing_id: listingId,
+        principal: values.principal,
+        currency: values.currency as "UF" | "CLP",
+        max_rounds: Number(values.rounds),
+        allowed_conditions: values.conditions
+          .split(",")
+          .filter((c): c is (typeof CONDITIONS)[number] =>
+            (CONDITIONS as readonly string[]).includes(c),
+          ),
+        issued_at: now.toISOString(),
+        expires_at: new Date(
+          now.getTime() + Number(values["valid-days"]) * 86_400_000,
+        ).toISOString(),
+        salt: newSalt(),
+        closing_days: { min: d0 ?? 30, max: d1 ?? d0 ?? 90 },
+      };
+      const svc = new NegotiationService({
+        store,
+        principals: PrincipalRegistry.fromFile(join(store.root, "principals.json")),
+        seller: scriptedSeller(),
+      });
+      if (kind === "seller") {
+        if (!values.asking || !values.floor)
+          throw new Error("seller mandate needs --asking and --floor");
+        const m: SellerMandate = {
+          ...base,
+          kind: "seller",
+          asking: Number(values.asking),
+          floor: Number(values.floor),
+        };
+        writeFileSync(
+          svc.mandatePath("seller", listingId),
+          `${JSON.stringify(signMandate(m, pem), null, 2)}\n`,
+          { mode: 0o600 },
+        );
+        console.log(
+          `seller mandate signed for ${listingId} (asking and floor stored privately; the floor is never in the listing)`,
+        );
+      } else {
+        if (!values.agent || !values.target || !values.max)
+          throw new Error("buyer mandate needs --agent, --target and --max");
+        const m: BuyerMandate = {
+          ...base,
+          kind: "buyer",
+          agent_id: values.agent,
+          target: Number(values.target),
+          max: Number(values.max),
+        };
+        writeFileSync(
+          svc.mandatePath("buyer", listingId, values.agent),
+          `${JSON.stringify(signMandate(m, pem), null, 2)}\n`,
+          { mode: 0o600 },
+        );
+        console.log(`buyer mandate signed for agent ${values.agent} on ${listingId}`);
+      }
+      return;
+    }
+    case "negotiation": {
+      const [sub, id] = positionals;
+      const svc = new NegotiationService({
+        store,
+        principals: PrincipalRegistry.fromFile(join(store.root, "principals.json")),
+        seller: scriptedSeller(),
+      });
+      if (sub === "list" || !sub) {
+        for (const x of svc.list())
+          console.log(
+            `${x.state.id}  ${x.state.status.padEnd(11)} ${x.state.listing_id}  agent=${x.buyer_agent_id}  moves=${x.state.moves.length}`,
+          );
+        return;
+      }
+      if (!id) throw new Error("negotiation show|approve <id>");
+      if (sub === "show") {
+        const op = svc.operatorState(id);
+        if (!op) throw new Error("no such negotiation (or its mandates are no longer valid)");
+        for (const m of op.state.moves)
+          console.log(
+            `${String(m.seq).padStart(2)}. ${m.party.padEnd(6)} ${m.type.padEnd(9)} ${m.price !== undefined ? `${op.state.currency} ${m.price}, ${m.closing_days} days` : ""}  "${m.rationale}"${m.flags.length ? `  [flags: ${m.flags.join(",")}]` : ""}`,
+          );
+        console.log(
+          `status: ${op.state.status}${op.state.agreement ? `  agreed ${op.state.currency} ${op.state.agreement.price}, ${op.state.agreement.closing_days} days` : ""}`,
+        );
+        const ts = svc.termSheet(id);
+        if (ts) {
+          const st = approvalStatus(
+            ts.term_sheet,
+            ts.approvals,
+            PrincipalRegistry.fromFile(join(store.root, "principals.json")),
+          );
+          console.log(
+            `term sheet: non-binding; approvals buyer=${st.buyer ? "yes" : "pending"} seller=${st.seller ? "yes" : "pending"}${st.complete ? "  -> both principals approved" : ""}`,
+          );
+        }
+        return;
+      }
+      if (sub === "approve") {
+        if (!values.as) throw new Error("negotiation approve <id> --as <principal>");
+        const ts = svc.termSheet(id);
+        if (!ts) throw new Error("no term sheet yet: the negotiation did not reach an agreement");
+        const a = approveTermSheet(
+          ts.term_sheet,
+          values.as,
+          readFileSync(join(store.root, "keys", `principal-${values.as}.pem`), "utf8"),
+        );
+        const r = svc.addApproval(id, a);
+        console.log(
+          `approved as ${values.as}. buyer=${r.buyer ? "yes" : "pending"} seller=${r.seller ? "yes" : "pending"}${r.complete ? "  -> BOTH PRINCIPALS APPROVED (still non-binding: a lawyer and a notary come next)" : ""}`,
+        );
+        return;
+      }
+      throw new Error("negotiation list | show <id> | approve <id> --as <principal>");
     }
     case "passport": {
       const [sub, a, b] = positionals;
