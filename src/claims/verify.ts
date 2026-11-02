@@ -121,8 +121,14 @@ export function declaredClaims(d: Declared, brokerId: string, at: string): Claim
     mk("d-price", "other", `Price ${d.price.currency} ${d.price.amount}`),
   ];
   if (d.area_m2 !== null) claims.push(mk("d-area", "layout", `${d.area_m2} m2`));
-  if (d.bedrooms !== null) claims.push(mk("d-bedrooms", "layout", `${d.bedrooms} bedrooms`));
-  if (d.bathrooms !== null) claims.push(mk("d-bathrooms", "layout", `${d.bathrooms} bathrooms`));
+  if (d.bedrooms !== null)
+    claims.push(
+      mk("d-bedrooms", "layout", `${d.bedrooms} ${d.bedrooms === 1 ? "bedroom" : "bedrooms"}`),
+    );
+  if (d.bathrooms !== null)
+    claims.push(
+      mk("d-bathrooms", "layout", `${d.bathrooms} ${d.bathrooms === 1 ? "bathroom" : "bathrooms"}`),
+    );
   if (d.pets_allowed !== null)
     claims.push(mk("d-pets", "other", d.pets_allowed ? "Pets allowed" : "Pets not allowed"));
   if (d.address) claims.push(mk("d-address", "other", `Address: ${d.address}`));

@@ -171,7 +171,18 @@ async function main(): Promise<void> {
         throw new Error(
           'search needs criteria JSON, e.g. search \'{"min_bedrooms":2,"pets_required":true}\'',
         );
-      const criteria = CriteriaSchema.parse(JSON.parse(raw));
+      let criteria: ReturnType<typeof CriteriaSchema.parse>;
+      try {
+        criteria = CriteriaSchema.parse(JSON.parse(raw));
+      } catch (err) {
+        const why =
+          err instanceof SyntaxError
+            ? "that is not valid JSON. Is there a space before --anonymous, and are the quotes balanced?"
+            : "the criteria do not match the schema";
+        throw new Error(
+          `search: ${why} (${err instanceof Error ? err.message.split("\n")[0] : err})`,
+        );
+      }
       const audit = new AuditLog(join(store.root, "audit.jsonl"));
       const core = new GatewayCore({ store, model: new OfflineAnswerModel(), audit });
       const caller = values.anonymous

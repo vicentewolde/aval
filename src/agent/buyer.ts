@@ -1,4 +1,4 @@
-import type { ToolTurn } from "../meta/client.ts";
+import { MetaApiError, type ToolTurn } from "../meta/client.ts";
 
 export interface McpLike {
   listTools(): Promise<{
@@ -36,7 +36,7 @@ export interface Step {
   isError: boolean;
 }
 
-const INSTRUCTIONS = `You are a buyer's agent working for a person who wants to buy a flat in Nunoa, Santiago.
+const INSTRUCTIONS = `You are a buyer's agent working for a person who wants to buy a home in Santiago. Only use a location the principal actually names; do not narrow it yourself.
 You can only act through the tools you are given (a listings gateway). Rules:
 - Start with search_listings, passing structured criteria for what your principal wants (budget, bedrooms, pets, must-have features). Then read the best listings' verified facts with get_facts.
 - Find listings, read their verified facts, ask the gateway questions, and request a visit only if a listing fits.
@@ -67,17 +67,47 @@ export async function runBuyerAgent(args: {
   let input: unknown = [
     { type: "message", role: "user", content: [{ type: "input_text", text: args.goal }] },
   ];
+  const trace: string[] = [];
+  const turnOptions = () => ({
+    model: "muse-spark-1.3" as const,
+    instructions: INSTRUCTIONS,
+    input,
+    tools: defs,
+    maxOutputTokens: 4000,
+    estInputTokens: 6000,
+    label: "buyer-agent",
+  });
   for (let i = 0; i < (args.maxSteps ?? 8); i++) {
-    const turn = await args.llm.respondTools({
-      model: "muse-spark-1.3",
-      instructions: INSTRUCTIONS,
-      input,
-      tools: defs,
-      ...(previous ? { previousResponseId: previous } : {}),
-      maxOutputTokens: 4000,
-      estInputTokens: 6000,
-      label: "buyer-agent",
-    });
+    let turn: ToolTurn;
+    try {
+      turn = await args.llm.respondTools({
+        ...turnOptions(),
+        ...(previous ? { previousResponseId: previous } : {}),
+      });
+    } catch (err) {
+      // Meta sometimes cannot find the previous response it just stored. The retries in the client
+      // handle the usual race; if that is not enough, resume from a recap instead of dying mid-task.
+      const lost =
+        err instanceof MetaApiError &&
+        err.status === 400 &&
+        err.body.includes("referenced response not found");
+      if (!lost || !previous) throw err;
+      log("(Meta lost the previous response; resuming from a recap of what was already done)");
+      previous = undefined;
+      input = [
+        {
+          type: "message",
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: `${args.goal}\n\nWhat you have already done (the tool results are authoritative; do not repeat calls you do not need):\n${trace.join("\n")}\n\nContinue from here.`,
+            },
+          ],
+        },
+      ];
+      turn = await args.llm.respondTools(turnOptions());
+    }
     costUsd += turn.costUsd;
     previous = turn.id;
     if (turn.calls.length === 0) return { steps, finalText: turn.text, costUsd };
@@ -95,6 +125,9 @@ export async function runBuyerAgent(args: {
       };
       const text = (r.content ?? []).map((c) => c.text ?? "").join("\n");
       steps.push({ tool: call.name, args: parsed, result: text, isError: r.isError === true });
+      trace.push(
+        `- ${call.name}(${JSON.stringify(parsed)}) -> ${r.isError ? "[refused] " : ""}${text.slice(0, 2500)}`,
+      );
       log(`-> ${call.name}(${JSON.stringify(parsed)})${r.isError ? "  [refused]" : ""}`);
       outputs.push({
         type: "function_call_output",

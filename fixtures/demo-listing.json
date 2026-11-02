@@ -116,7 +116,7 @@
     {
       "id": "d-bathrooms",
       "category": "layout",
-      "statement": "1 bathrooms",
+      "statement": "1 bathroom",
       "provenance": "broker_declared",
       "evidence": {
         "kind": "declared",

@@ -12,6 +12,7 @@ import { GatewayCore } from "../src/gateway/core.ts";
 import { AgentRegistry } from "../src/gateway/identity.ts";
 import { OfflineAnswerModel } from "../src/gateway/offline-model.ts";
 import { startGateway } from "../src/gateway/server.ts";
+import { MetaApiError } from "../src/meta/client.ts";
 import { Store } from "../src/store.ts";
 
 const listing = ListingSchema.parse(
@@ -127,6 +128,55 @@ describe("buyer agent over the real gateway (scripted model)", () => {
     expect(r.steps[0]?.isError).toBe(false);
     expect(r.steps[1]?.isError).toBe(true);
     expect(r.steps[1]?.result).toContain("AGENT_NOT_IDENTIFIED");
+    await mcp.close();
+  });
+
+  it("resumes from a recap when Meta loses the previous response, instead of dying mid-task", async () => {
+    const mcp = await connectAgent(url);
+    const seen: Array<{ previousResponseId?: string; recap: string }> = [];
+    let i = 0;
+    const usage = { input_tokens: 1, output_tokens: 1 };
+    const llm: ToolLLM = {
+      respondTools: async (o) => {
+        i++;
+        seen.push({
+          ...(o.previousResponseId ? { previousResponseId: o.previousResponseId } : {}),
+          recap: JSON.stringify(o.input),
+        });
+        if (i === 1)
+          return {
+            id: "r1",
+            text: "",
+            calls: [{ name: "get_facts", arguments: '{"listing_id":"demo-1"}', callId: "c1" }],
+            usage,
+            costUsd: 0,
+          };
+        if (i === 2)
+          throw new MetaApiError(
+            400,
+            '{"error":{"message":"referenced response not found or expired"}}',
+            false,
+          );
+        return { id: "r3", text: "Recovered and finished.", calls: [], usage, costUsd: 0 };
+      },
+    };
+    const r = await runBuyerAgent({ llm, mcp, goal: "Find a flat", log: () => {} });
+    expect(r.finalText).toBe("Recovered and finished.");
+    expect(seen[1]?.previousResponseId).toBe("r1"); // tried the chain first
+    expect(seen[2]?.previousResponseId).toBeUndefined(); // then started clean
+    expect(seen[2]?.recap).toContain("get_facts"); // with a recap of the work done
+    expect(seen[2]?.recap).toContain("Find a flat");
+    await mcp.close();
+  });
+
+  it("does not hide other errors", async () => {
+    const mcp = await connectAgent(url);
+    const llm: ToolLLM = {
+      respondTools: async () => {
+        throw new MetaApiError(400, "something else", false);
+      },
+    };
+    await expect(runBuyerAgent({ llm, mcp, goal: "x" })).rejects.toBeInstanceOf(MetaApiError);
     await mcp.close();
   });
 

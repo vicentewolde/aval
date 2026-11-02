@@ -180,6 +180,33 @@ describe("must_have: evidence or nothing", () => {
 });
 
 describe("ranking and privacy", () => {
+  it("ranks a listing with an unconfirmed HARD criterion below one whose only gap is a nice-to-have", () => {
+    // 'strongEvidence' has a verified bathtub but its budget fit is unconfirmed (range straddles the budget);
+    // 'priceKnown' has a confirmed price and only lacks the bathtub. The buyer's budget matters more.
+    const strongEvidence = listing(
+      "strong-evidence",
+      { price: { amount: 5100, currency: "UF" } },
+      [verified("c1", "Bathtub")],
+      { priceVisibility: "range", priceRangePct: 0.1 },
+    );
+    const priceKnown = listing("price-known", { price: { amount: 4300, currency: "UF" } });
+    const r = run([strongEvidence, priceKnown], {
+      max_price: { amount: 5000, currency: "UF" },
+      must_have: ["bathtub"],
+    });
+    expect(r.matches.map((m) => m.listing_id)).toEqual(["price-known", "strong-evidence"]);
+  });
+
+  it("writes singular and plural correctly in declared facts", () => {
+    const one = listing("one", { bedrooms: 1, bathrooms: 1 });
+    expect(one.claims.find((c) => c.id === "d-bedrooms")?.statement).toBe("1 bedroom");
+    expect(one.claims.find((c) => c.id === "d-bathrooms")?.statement).toBe("1 bathroom");
+    expect(
+      listing("two", { bedrooms: 2, bathrooms: 3 }).claims.find((c) => c.id === "d-bathrooms")
+        ?.statement,
+    ).toBe("3 bathrooms");
+  });
+
   it("ranks fully met listings first, then by evidence strength", () => {
     const strong = listing("strong", {}, [verified("c1", "Bathtub")]);
     const weak = listing("weak", {}, [stated("s1", "Bathtub")]);

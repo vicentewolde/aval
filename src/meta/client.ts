@@ -138,8 +138,8 @@ export class MetaClient {
           err instanceof MetaApiError &&
           err.status === 400 &&
           err.body.includes("referenced response not found");
-        if (!raceLost || attempt >= 3) throw err;
-        await this.sleep(1500 * (attempt + 1));
+        if (!raceLost || attempt >= 5) throw err;
+        await this.sleep(2000 * (attempt + 1));
       }
     }
   }

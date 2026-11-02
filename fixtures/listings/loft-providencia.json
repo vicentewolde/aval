@@ -98,7 +98,7 @@
     {
       "id": "d-bedrooms",
       "category": "layout",
-      "statement": "1 bedrooms",
+      "statement": "1 bedroom",
       "provenance": "broker_declared",
       "evidence": {
         "kind": "declared",
@@ -115,7 +115,7 @@
     {
       "id": "d-bathrooms",
       "category": "layout",
-      "statement": "1 bathrooms",
+      "statement": "1 bathroom",
       "provenance": "broker_declared",
       "evidence": {
         "kind": "declared",

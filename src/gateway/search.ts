@@ -242,10 +242,12 @@ export function searchListings(
       criteria: criteriaResults,
     });
   }
+  // What the buyer cannot compromise on comes first: a listing whose HARD criterion (budget, bedrooms,
+  // pets...) is unconfirmed ranks below one whose only gap is a nice-to-have, whatever the evidence score.
+  const gaps = (m: Match, hard: boolean): number =>
+    m.criteria.filter((c) => c.status === "unconfirmed" && c.hard === hard).length;
   matches.sort(
-    (a, b) =>
-      Number(a.fit !== "all criteria met") - Number(b.fit !== "all criteria met") ||
-      b.score - a.score,
+    (a, b) => gaps(a, true) - gaps(b, true) || gaps(a, false) - gaps(b, false) || b.score - a.score,
   );
   return {
     matches: matches.slice(0, criteria.limit ?? 5),
