@@ -340,6 +340,23 @@ export async function runToolChecks(): Promise<CheckResult[]> {
     // 7. The flight recorder survived all of the above, and tampering with it shows.
     const v = verifyChain(auditPath);
     check("audit", `the audit chain is intact after ${v.entries} entries of attacks`, v.ok);
+    const shared = join(dir, "shared.jsonl");
+    const w1 = new AuditLog(shared);
+    const w2 = new AuditLog(shared);
+    for (const t of ["a", "b", "c", "d"])
+      (t < "c" ? w1 : w2).append({
+        agent: "x",
+        tier: "verified",
+        tool: t,
+        decision: "allowed",
+        detail: "",
+      });
+    w1.append({ agent: "x", tier: "verified", tool: "e", decision: "allowed", detail: "" });
+    check(
+      "audit",
+      "two gateways writing to one log do not fork the chain",
+      verifyChain(shared).ok && verifyChain(shared).entries === 5,
+    );
     const copy = join(dir, "tampered.jsonl");
     const lines = readFileSync(auditPath, "utf8").split("\n");
     writeFileSync(

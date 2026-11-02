@@ -117,7 +117,7 @@ matches the one inline script, and register a `get_listing_facts` tool through W
 
 Benign questions are still answered (0 / 6 missed). A second battery attacks everything around the
 model without any model (who can tell what exists, scraping, forged identities, hostile sellers,
-hostile callers, the audit chain, plus forged mandates, smuggled limits and a hijacked seller agent): **74 / 74 attacks blocked**, mutation-tested, in
+hostile callers, the audit chain, plus forged mandates, smuggled limits and a hijacked seller agent): **75 / 75 attacks blocked**, mutation-tested, in
 [docs/redteam-tools.md](docs/redteam-tools.md). Both red-teams found real holes in the first versions
 (an existence oracle, a symmetric price range, seller text planted as facts, a model asserting
 "no"...); all are fixed and the history shows when. Details, every attack and the honest limits:

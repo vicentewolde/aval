@@ -1,5 +1,14 @@
 import { createHash } from "node:crypto";
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import {
+  appendFileSync,
+  closeSync,
+  existsSync,
+  fstatSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  readSync,
+} from "node:fs";
 import { dirname } from "node:path";
 
 export interface AuditEntry {
@@ -28,18 +37,35 @@ function hashOf(e: Omit<AuditEntry, "hash">): string {
  */
 export class AuditLog {
   private readonly path: string;
-  private seq = 0;
-  private prev = GENESIS;
 
   constructor(path: string) {
     this.path = path;
     mkdirSync(dirname(path), { recursive: true });
-    if (existsSync(path)) {
-      const last = readEntries(path).at(-1);
-      if (last) {
-        this.seq = last.seq;
-        this.prev = last.hash;
-      }
+  }
+
+  /**
+   * The last entry is read from the file on every append, not remembered: two gateways (or a gateway and
+   * a test run) sharing one log would otherwise each extend their own stale tail and fork the chain.
+   * Node runs one append at a time within a process; across processes the window is a few microseconds.
+   */
+  private tail(): { seq: number; prev: string } {
+    if (!existsSync(this.path)) return { seq: 0, prev: GENESIS };
+    const fd = openSync(this.path, "r");
+    try {
+      const size = fstatSync(fd).size;
+      const len = Math.min(size, 16_384);
+      const buf = Buffer.alloc(len);
+      readSync(fd, buf, 0, len, size - len);
+      const last = buf
+        .toString("utf8")
+        .split("\n")
+        .filter((l) => l.trim())
+        .at(-1);
+      if (!last) return { seq: 0, prev: GENESIS };
+      const e = JSON.parse(last) as AuditEntry;
+      return { seq: e.seq, prev: e.hash };
+    } finally {
+      closeSync(fd);
     }
   }
 
@@ -47,17 +73,16 @@ export class AuditLog {
     e: Pick<AuditEntry, "agent" | "tier" | "tool" | "decision" | "detail">,
     now = new Date(),
   ): AuditEntry {
+    const t = this.tail();
     const base = {
-      seq: this.seq + 1,
+      seq: t.seq + 1,
       ts: now.toISOString(),
       ...e,
       detail: e.detail.slice(0, 500),
-      prev: this.prev,
+      prev: t.prev,
     };
     const entry: AuditEntry = { ...base, hash: hashOf(base) };
     appendFileSync(this.path, `${JSON.stringify(entry)}\n`);
-    this.seq = entry.seq;
-    this.prev = entry.hash;
     return entry;
   }
 }
