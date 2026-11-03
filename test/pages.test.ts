@@ -183,3 +183,31 @@ describe("public pages for agents that do not speak MCP", () => {
     ).not.toBe(404);
   });
 });
+
+describe("sale documents on the public page", () => {
+  it("says 'not reviewed' when there is no review, and never 'clear'", async () => {
+    const html = await (await fetch(`${base}/l/demo-1`)).text();
+    expect(html).toContain("Sale documents");
+    expect(html).toContain("Not reviewed");
+    expect(html).not.toMatch(/reviewed, nothing found/);
+  });
+});
+
+describe("renderListingPage with a review", () => {
+  it("shows status and rule names from the real blocked example, and none of its personal data", async () => {
+    const { renderListingPage, publicFacts } = await import("../src/gateway/pages.ts");
+    const { publicSummary } = await import("../src/diligence/review.ts");
+    const review = JSON.parse(
+      readFileSync(
+        join(import.meta.dirname, "..", "docs", "examples", "title-review-blocked.json"),
+        "utf8",
+      ),
+    );
+    const l = fx("demo-1");
+    const { html } = renderListingPage(l, publicFacts(l) ?? [], "http://x", publicSummary(review));
+    expect(html).toContain("a blocking problem was found");
+    expect(html).toContain("owner is not seller");
+    for (const secret of ["Mella", "Fuentes", "9.876.543", "Banco Ejemplo", "C-4567"])
+      expect(html).not.toContain(secret);
+  });
+});

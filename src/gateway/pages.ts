@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Listing } from "../claims/schema.ts";
+import { loadPublicReview, reviewAttachments } from "../diligence/review.ts";
 import { type Issuer, issuePassport, publicKeyOf } from "../passport/passport.ts";
 import type { Store } from "../store.ts";
 import { type Caller, PolicyDenied, type VisibleFact, visibleFacts } from "./policy.ts";
@@ -187,10 +188,26 @@ export function webMcpScript(listing: Listing, facts: VisibleFact[]): string {
 }`;
 }
 
+const REVIEW_TEXT: Record<string, string> = {
+  clear: "reviewed, nothing found",
+  needs_attention: "reviewed, items to settle before closing",
+  blocked: "reviewed, a blocking problem was found",
+  incomplete: "some documents are missing or could not be verified",
+};
+
+function reviewBox(r: ReturnType<typeof loadPublicReview>): string {
+  const names = (xs: string[]) =>
+    xs.map((x) => esc(x.toLowerCase().replaceAll("_", " "))).join(", ");
+  if (!r)
+    return `<div class="box"><b>Sale documents</b><p>Not reviewed: the seller has not provided documents. This is not the same as clear.</p></div>`;
+  return `<div class="box"><b>Sale documents</b><p>${esc(REVIEW_TEXT[r.status] ?? r.status)} (${r.documents} certificates read).${r.blockers.length ? ` Blocking: ${names(r.blockers)}.` : ""}${r.warnings.length ? ` To settle: ${names(r.warnings)}.` : ""} <span class="m">Automated reading, not legal advice. Review ${esc(r.review_hash.slice(0, 12))}…</span></p></div>`;
+}
+
 export function renderListingPage(
   listing: Listing,
   facts: VisibleFact[],
   baseUrl: string,
+  review: ReturnType<typeof loadPublicReview> = null,
 ): { html: string; scriptHash: string } {
   const url = `${baseUrl}/l/${listing.id}`;
   const script = webMcpScript(listing, facts);
@@ -219,6 +236,7 @@ export function renderListingPage(
 <div class="box"><b>What the seller's rules mean for you</b><ul>${policyLines(listing)
     .map((l) => `<li>${esc(l)}</li>`)
     .join("")}</ul></div>
+${reviewBox(review)}
 <table><tr><th>Fact</th><th>Source</th><th>Evidence</th></tr>${rows}</table>
 <div class="box"><b>For AI agents</b><p>This page is the public, read-only view. For questions, search across listings, and visit requests, connect to the MCP endpoint <code>${esc(baseUrl)}/mcp</code> (tools: ${MCP_TOOLS.join(", ")}). Identified agents sign their requests; see <a href="/.well-known/aval.json">/.well-known/aval.json</a>. Machine-readable facts: <a href="/l/${esc(listing.id)}.json">/l/${esc(listing.id)}.json</a>. Signed, offline-verifiable record: <a href="/l/${esc(listing.id)}/passport.json">passport.json</a>.</p></div>
 <script>${script}</script></body></html>`;
@@ -383,7 +401,14 @@ export function handlePublicRequest(
       res,
       200,
       "application/json",
-      JSON.stringify(issuePassport(l, issuer, { listingDir: store.listingDir(l.id) }), null, 2),
+      JSON.stringify(
+        issuePassport(l, issuer, {
+          listingDir: store.listingDir(l.id),
+          attachments: reviewAttachments(store.listingDir(l.id)),
+        }),
+        null,
+        2,
+      ),
     );
     return true;
   }
@@ -405,7 +430,12 @@ export function handlePublicRequest(
     );
     return true;
   }
-  const { html, scriptHash } = renderListingPage(listing, facts, base);
+  const { html, scriptHash } = renderListingPage(
+    listing,
+    facts,
+    base,
+    loadPublicReview(store.listingDir(listing.id)),
+  );
   send(req, res, 200, "text/html", html, {
     "content-security-policy": `${CSP_PLAIN}; script-src 'sha256-${scriptHash}'`,
   });

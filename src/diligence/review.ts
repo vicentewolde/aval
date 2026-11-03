@@ -95,3 +95,11 @@ export function reviewAttachments(listingDir: string): Record<string, string> {
   if (!verifyReviewHash(r)) return {};
   return { title_review: r.hash, title_review_status: r.status };
 }
+
+/** The public summary of a stored review, or null if there is none or it fails its integrity check. */
+export function loadPublicReview(listingDir: string): ReturnType<typeof publicSummary> | null {
+  const path = join(listingDir, "title-review.json");
+  if (!existsSync(path)) return null;
+  const r = JSON.parse(readFileSync(path, "utf8")) as TitleReview;
+  return verifyReviewHash(r) ? publicSummary(r) : null;
+}
