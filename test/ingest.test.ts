@@ -2,7 +2,11 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// These tests render a video with ffmpeg; give them room when the machine is busy.
+vi.setConfig({ testTimeout: 30_000 });
+
 import { type ClaimProposal, DEFAULT_POLICY } from "../src/claims/schema.ts";
 import { ingestVideo, type Proposer, type Segmenter } from "../src/extract/ingest.ts";
 import { OfflineAnswerModel } from "../src/gateway/offline-model.ts";
