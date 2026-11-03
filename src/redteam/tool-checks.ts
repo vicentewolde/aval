@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { importAgentSalesRow } from "../adapters/agentsales.ts";
 import { type Listing, ListingSchema } from "../claims/schema.ts";
 import { declaredClaims } from "../claims/verify.ts";
+import { ungroundedTerms } from "../gateway/answer.ts";
 import { AuditLog, readEntries, verifyChain } from "../gateway/audit.ts";
 import { GatewayCore, SEARCHES_PER_HOUR } from "../gateway/core.ts";
 import { AgentRegistry, signRequest } from "../gateway/identity.ts";
@@ -380,6 +381,32 @@ export async function runToolChecks(): Promise<CheckResult[]> {
       "editing one line of the log is detected",
       orig === mod || !verifyChain(copy).ok,
       orig === mod ? "line 4 had nothing to change" : `broken at ${verifyChain(copy).brokenAt}`,
+    );
+    const gf = (statement: string) => ({
+      id: "g",
+      statement,
+      provenance: "broker_declared" as const,
+      evidence: "declared by the broker; not independently verified",
+    });
+    check(
+      "grounding",
+      'a number word cannot replace a digit ("three bedrooms" cited against "2 bedrooms")',
+      ungroundedTerms("The flat has three bedrooms.", [gf("2 bedrooms")]).length > 0,
+    );
+    check(
+      "grounding",
+      'an ordinal cannot replace a floor ("the first floor" cited against "Floor 12")',
+      ungroundedTerms("It is on the first floor.", [gf("Floor 12")]).length > 0,
+    );
+    check(
+      "grounding",
+      "a digit cannot replace another digit",
+      ungroundedTerms("It has 5 bedrooms.", [gf("2 bedrooms")]).length > 0,
+    );
+    check(
+      "grounding",
+      'an honest paraphrase with the same number in words is still accepted ("two" for 2)',
+      ungroundedTerms("It has two bedrooms.", [gf("2 bedrooms")]).length === 0,
     );
     results.push(...(await runWebChecks(base, store)));
   } finally {

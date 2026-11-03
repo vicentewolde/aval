@@ -20,12 +20,41 @@ export function looksSpanish(question: string): boolean {
   return words !== null && !/\b(is|are|does|do|how|what|the|it|any)\b/i.test(question);
 }
 
-const numbersOf = (s: string): string[] =>
-  (s.match(/\d[\d.,]*/g) ?? []).map((n) => n.replace(/[.,]+$/, "").replace(/[.,]/g, "")).sort();
+const WORD_NUMBERS: Record<string, number> = Object.fromEntries([
+  ...["zero one two three four five six seven eight nine ten eleven twelve"]
+    .flatMap((l) => l.split(" "))
+    .map((w, i) => [w, i]),
+  ...["cero uno dos tres cuatro cinco seis siete ocho nueve diez once doce"]
+    .flatMap((l) => l.split(" "))
+    .map((w, i) => [w, i]),
+]);
 
-/** True only when both texts contain exactly the same numbers. */
-export function sameNumbers(a: string, b: string): boolean {
-  return JSON.stringify(numbersOf(a)) === JSON.stringify(numbersOf(b));
+/** Numbers a text expresses, as digits (separators ignored) or as number words in English and Spanish. */
+function numbersIn(s: string): { digits: Set<string>; all: Set<string> } {
+  const digits = new Set<string>();
+  const all = new Set<string>();
+  for (const n of s.match(/\d[\d.,]*/g) ?? []) {
+    const d = n.replace(/[.,]+$/, "").replace(/[.,]/g, "");
+    digits.add(d);
+    all.add(d);
+  }
+  for (const w of stripAccents(s.toLowerCase()).match(/[a-z]+/g) ?? []) {
+    const n = WORD_NUMBERS[w];
+    if (n !== undefined) all.add(String(n));
+  }
+  return { digits, all };
+}
+
+/**
+ * The translation may not introduce a number the original lacks (digit or word, English or Spanish: "four"
+ * must not become "cinco") and may not drop a figure the original gave in digits (a price, a floor).
+ */
+export function sameNumbers(original: string, translation: string): boolean {
+  const o = numbersIn(original);
+  const t = numbersIn(translation);
+  for (const n of t.all) if (!o.all.has(n)) return false;
+  for (const n of o.digits) if (!t.all.has(n)) return false;
+  return true;
 }
 
 const INSTRUCTIONS = `Translate the text into natural Chilean Spanish.
@@ -50,7 +79,7 @@ export class MuseTranslator implements AnswerTranslator {
         label: "translate-answer",
       });
       const text = r.text.trim();
-      if (text === "" || text.length > 3000 || !sameNumbers(text, verifiedEnglish)) return null;
+      if (text === "" || text.length > 3000 || !sameNumbers(verifiedEnglish, text)) return null;
       return text;
     } catch {
       return null;

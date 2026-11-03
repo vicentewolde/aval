@@ -47,7 +47,6 @@ const INJECTION_PATTERNS: Array<[RegExp, string]> = [
 
 const GENERIC = new Set(
   `a an to of in on at by as is it be or if so we up do me my our us been being does did done get got such the and are was were has have had with from into onto over under about around also both each only just than then them they their there here this that these those its it's for you your any all can could would should will may might must yes but because since while when where which what who whom whose how why per via
-   one two three four five six seven eight nine ten first second
    listing listings apartment flat property home unit place seller sellers broker brokers video clip walkthrough footage seen shown shows show showing visible features feature featured include includes included including located offers offer available availability confirmed confirm confirmation verified verify verification declared declare according states state said say fact facts source sources evidence cited note noted`.split(
     /\s+/,
   ),
@@ -55,8 +54,27 @@ const GENERIC = new Set(
 
 /** Digits and letters only, so "Av." and "av" compare equal. */
 function words(text: string): string[] {
-  return normalize(text).match(/[a-z\u00e0-\u00ff]+|\d+/g) ?? [];
+  return (normalize(text).match(/[a-z\u00e0-\u00ff]+|\d+/g) ?? []).map((w) => NUMBER_WORDS[w] ?? w);
 }
+
+/**
+ * Number words and ordinals count as numbers. Without this, "three bedrooms" cited against "2 bedrooms"
+ * and "the first floor" against "Floor 12" slipped through, because the words looked like plain
+ * connective words while only digits were checked. They are read as digits on both sides, so
+ * "four chairs" and "4 chairs" agree and "three" cannot stand for 2.
+ */
+const NUMBER_WORDS: Record<string, string> = Object.fromEntries(
+  [
+    "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty",
+  ]
+    .flatMap((l) => l.split(" "))
+    .map((w, i) => [w, String(i)])
+    .concat(
+      "first second third fourth fifth sixth seventh eighth ninth tenth"
+        .split(" ")
+        .map((w, i) => [w, String(i + 1)]),
+    ),
+);
 
 const stem = (w: string): string => (w.length > 4 ? w.replace(/(ies|es|s|ed|ing)$/, "") : w);
 
