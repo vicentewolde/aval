@@ -11,6 +11,9 @@ const TASTE =
 const CONTACT =
   /(https?:\/\/|www\.|[\w.+-]+@[\w-]+\.\w+|\+?\d[\d\s().-]{7,}\d|whatsapp|call me|contact me|llamame|llama al)/i;
 
+export const hasTasteWord = (text: string): boolean => TASTE.test(text);
+export const hasContactDetails = (text: string): boolean => CONTACT.test(text);
+
 export interface Rejection {
   field: string;
   value: string;

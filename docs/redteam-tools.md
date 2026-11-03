@@ -2,10 +2,10 @@
 
 Deterministic attacks on the gateway itself: who can tell what exists, how much a caller may ask, how
 identities are forged, what a hostile seller can plant, and whether the audit trail survives. No model and
-no spend; the same 114 checks run in the test suite (`test/redteam-tools.test.ts`). Regenerate with
+no spend; the same 119 checks run in the test suite (`test/redteam-tools.test.ts`). Regenerate with
 `node scripts/redteam-tools.ts`.
 
-**Result: 114 of 114 attacks failed to get through.**
+**Result: 119 of 119 attacks failed to get through.**
 
 | Category | Checks | Passed |
 |---|---|---|
@@ -17,6 +17,7 @@ no spend; the same 114 checks run in the test suite (`test/redteam-tools.test.ts
 | hostile caller | 2 | 2 |
 | audit | 3 | 3 |
 | grounding | 4 | 4 |
+| caption | 5 | 5 |
 | web | 35 | 35 |
 | negotiation | 36 | 36 |
 
@@ -86,6 +87,14 @@ no spend; the same 114 checks run in the test suite (`test/redteam-tools.test.ts
 - PASS an ordinal cannot replace a floor ("the first floor" cited against "Floor 12")
 - PASS a digit cannot replace another digit
 - PASS an honest paraphrase with the same number in words is still accepted ("two" for 2)
+
+## caption
+
+- PASS the caption of as-h-1 has no forbidden address or price, no held-back or taste claim, and no planted instruction
+- PASS the caption of casa-la-reina has no forbidden address or price, no held-back or taste claim, and no planted instruction
+- PASS the caption of demo-1 has no forbidden address or price, no held-back or taste claim, and no planted instruction
+- PASS the caption of duplex-las-condes has no forbidden address or price, no held-back or taste claim, and no planted instruction
+- PASS the caption of loft-providencia has no forbidden address or price, no held-back or taste claim, and no planted instruction
 
 ## web
 

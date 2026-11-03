@@ -21,6 +21,8 @@ export interface ExportOptions {
   base?: string;
   /** Status of the sale-document review, when there is one (clear, needs_attention, blocked, incomplete). */
   reviewStatus?: string;
+  /** The verified caption (Spanish, Instagram) when one exists, as an extra column. */
+  caption?: string;
   /** Only the plain AgentSales columns, with no aval_* extras (those need a configurable field in AgentSales). */
   plain?: boolean;
 }
@@ -29,6 +31,7 @@ export type ExportedRow = AgentSalesRow & {
   aval_showroom_url?: string;
   aval_verified_facts?: number;
   aval_title_review?: string;
+  aval_caption?: string;
 };
 
 export const COLUMNS = [
@@ -60,7 +63,7 @@ export const EXTRA_COLUMNS = [
   "aval_title_review",
 ] as const;
 
-const TYPES: Array<[RegExp, string]> = [
+export const TYPES: Array<[RegExp, string]> = [
   [/^departamento\b/i, "Departamento"],
   [/^casa\b/i, "Casa"],
   [/^oficina\b/i, "Oficina"],
@@ -130,6 +133,7 @@ export function exportAgentSalesRow(listing: Listing, opts: ExportOptions = {}):
       row.aval_showroom_url = `${opts.base.replace(/\/+$/, "")}/l/${listing.id}/showroom`;
     row.aval_verified_facts = verified.length;
     if (opts.reviewStatus) row.aval_title_review = opts.reviewStatus;
+    if (opts.caption) row.aval_caption = opts.caption;
   }
   // The same contract the importer enforces: an export that AgentSales' format would reject is a bug here.
   AgentSalesRowSchema.parse(row);

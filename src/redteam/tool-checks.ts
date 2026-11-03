@@ -6,11 +6,14 @@ import { join } from "node:path";
 import { importAgentSalesRow } from "../adapters/agentsales.ts";
 import { type Listing, ListingSchema } from "../claims/schema.ts";
 import { declaredClaims } from "../claims/verify.ts";
+import { buildCaption, CaptionError } from "../copy/caption.ts";
+import { OfflineCaptionModel } from "../copy/caption-models.ts";
 import { ungroundedTerms } from "../gateway/answer.ts";
 import { AuditLog, readEntries, verifyChain } from "../gateway/audit.ts";
 import { GatewayCore, SEARCHES_PER_HOUR } from "../gateway/core.ts";
 import { AgentRegistry, signRequest } from "../gateway/identity.ts";
 import { OfflineAnswerModel } from "../gateway/offline-model.ts";
+import { forbiddenStrings } from "../gateway/policy.ts";
 import { startGateway } from "../gateway/server.ts";
 import { Store } from "../store.ts";
 import { runNegotiationChecks } from "./negotiation-checks.ts";
@@ -408,6 +411,37 @@ export async function runToolChecks(): Promise<CheckResult[]> {
       'an honest paraphrase with the same number in words is still accepted ("two" for 2)',
       ungroundedTerms("It has two bedrooms.", [gf("2 bedrooms")]).length === 0,
     );
+    for (const l of store.listListings()) {
+      try {
+        const cap = await buildCaption({
+          listing: l,
+          channel: "portal",
+          language: "en",
+          model: new OfflineCaptionModel(),
+          includeStated: false,
+        });
+        const text = cap.text.toLowerCase();
+        const leaks = forbiddenStrings(l).filter((f) => text.includes(f.toLowerCase()));
+        const held = l.claims
+          .filter((c) => c.provenance === "unverified" || c.provenance === "subjective")
+          .filter((c) => text.includes(c.statement.toLowerCase()));
+        const injected = /ignore (all )?(previous|prior)|instructions|system prompt/i.test(
+          cap.text,
+        );
+        check(
+          "caption",
+          `the caption of ${l.id} has no forbidden address or price, no held-back or taste claim, and no planted instruction`,
+          leaks.length === 0 && held.length === 0 && !injected,
+          [...leaks, ...held.map((h) => h.statement)].join("; "),
+        );
+      } catch (e) {
+        check(
+          "caption",
+          `${l.id}: too little proven for a caption is refused, not padded`,
+          e instanceof CaptionError,
+        );
+      }
+    }
     results.push(...(await runWebChecks(base, store)));
   } finally {
     http.close();

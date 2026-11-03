@@ -8,6 +8,14 @@ import { runBuyerAgent } from "./agent/buyer.ts";
 import { connectAgent } from "./agent/signed-client.ts";
 import { DEFAULT_POLICY, DeclaredSchema, PolicySchema } from "./claims/schema.ts";
 import { declaredClaims } from "./claims/verify.ts";
+import {
+  buildCaption,
+  type Caption,
+  CaptionError,
+  type Channel,
+  verifyCaptionHash,
+} from "./copy/caption.ts";
+import { MuseCaptionModel, OfflineCaptionModel } from "./copy/caption-models.ts";
 import { MuseDocReader } from "./diligence/reader.ts";
 import {
   loadPublicReview,
@@ -92,6 +100,7 @@ const USAGE = `aval <command>
   serve [--port 8787] [--offline]          MCP gateway for buyer agents
   agent-keygen <id> <name> <operator>      create a signing key and register the agent
   visits [approve|decline <visit-id>]      visit requests from agents (a human decides)
+  caption <id> [--channel instagram|portal] [--language es|en] [--base <url>] [--include-stated] [--offline]   copy that can only say what is proven, each sentence tied to its evidence
   export-agentsales <id…>|--all            the reverse of import-agentsales: a row in the AgentSales column format (verified-only amenities; --format csv|json, --out, --base <url>, --plain)
   alerts [run|delete <alert-id>]           saved buyer searches and the new homes that now match them (sending the notice is not built)
   leads [--id <listing>]|delete <lead-id>  buyers who asked to be contacted from the showroom, with how well the home fits what they searched
@@ -142,6 +151,9 @@ async function main(): Promise<void> {
       out: { type: "string" },
       plain: { type: "boolean", default: false },
       base: { type: "string" },
+      channel: { type: "string", default: "instagram" },
+      language: { type: "string" },
+      "include-stated": { type: "boolean", default: false },
       row: { type: "string" },
       video: { type: "string" },
       anonymous: { type: "boolean", default: false },
@@ -432,6 +444,58 @@ async function main(): Promise<void> {
       }
       return;
     }
+    case "caption": {
+      const [id] = positionals;
+      const l = id ? store.loadListing(id) : null;
+      if (!id || !l)
+        throw new Error(
+          "caption <id> [--channel instagram|portal] [--language es|en] [--base <url>] [--include-stated] [--offline]",
+        );
+      if (values.channel !== "instagram" && values.channel !== "portal")
+        throw new Error("--channel must be instagram or portal");
+      const language = values.language ?? (values.offline ? "en" : "es");
+      if (language !== "en" && language !== "es") throw new Error("--language must be en or es");
+      const c = values.offline ? null : client(guard);
+      try {
+        const cap = await buildCaption({
+          listing: l,
+          channel: values.channel as Channel,
+          language,
+          model: c ? new MuseCaptionModel(c) : new OfflineCaptionModel(),
+          ...(c ? { translator: new MuseTranslator(c) } : {}),
+          ...(values.base ? { base: values.base } : {}),
+          includeStated: values["include-stated"],
+        });
+        const out = join(store.listingDir(id), `caption-${cap.channel}-${cap.language}.json`);
+        writeFileSync(out, `${JSON.stringify(cap, null, 2)}\n`);
+        console.log(`\n${cap.text}\n`);
+        console.log("Each sentence and the proof it rests on:");
+        const byId = new Map(l.claims.map((x) => [x.id, x]));
+        cap.sentences.forEach((s, i) => {
+          const why = s.claim_ids.map((cid) => {
+            const claim = byId.get(cid);
+            const e = claim?.evidence;
+            return claim?.provenance === "visually_verified"
+              ? `${cid} verified in the video${e?.t_sec != null ? ` at ${e.t_sec}s (${e.frames_detected} frames)` : ""}`
+              : `${cid} declared by the broker`;
+          });
+          console.log(`  ${i + 1}. ${s.english}\n     <- ${why.join("; ")}`);
+        });
+        if (cap.withheld.length > 0) {
+          console.log("\nLeft out, and why:");
+          for (const w of cap.withheld) console.log(`  - ${w.statement}: ${w.reason}`);
+        }
+        if (cap.dropped.length > 0) {
+          console.log("\nThe writer proposed these and the checker removed them:");
+          for (const d of cap.dropped) console.log(`  - "${d.text}": ${d.reason}`);
+        }
+        console.log(`\n${out}  (hash ${cap.hash.slice(0, 16)}...)`);
+      } catch (e) {
+        if (e instanceof CaptionError) throw new Error(`${e.code}: ${e.message}`);
+        throw e;
+      }
+      return;
+    }
     case "export-agentsales": {
       const wanted = values.all ? store.listListings().map((l) => l.id) : positionals;
       if (wanted.length === 0)
@@ -444,7 +508,12 @@ async function main(): Promise<void> {
         const l = store.loadListing(id);
         if (!l) throw new Error(`no such listing: ${id}`);
         const review = loadPublicReview(store.listingDir(id));
+        const capPath = join(store.listingDir(id), "caption-instagram-es.json");
+        const cap = existsSync(capPath)
+          ? (JSON.parse(readFileSync(capPath, "utf8")) as Caption)
+          : null;
         return exportAgentSalesRow(l, {
+          ...(cap && verifyCaptionHash(cap) ? { caption: cap.text } : {}),
           ...(values.base ? { base: values.base } : {}),
           ...(review ? { reviewStatus: review.status } : {}),
           plain: values.plain,

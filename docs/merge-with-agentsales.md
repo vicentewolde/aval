@@ -69,7 +69,7 @@ rules and PDF-page verification, the passport (Merkle and signatures), the sanit
 | M1 | Port the pure core as new packages | The moved tests pass unchanged in the AgentSales workspace |
 | M2 | Claims, leads and alerts in the database; stores replaced | A listing keeps its claims across restarts; the repository tests pass |
 | M3 | Processing pipeline: video, voice and documents become claims | One listing goes from upload to verified facts in the panel |
-| M4 | Copy only from verified claims; the agent registry as a publication target | A caption is produced with every sentence tied to a claim; publishing to the registry appears in tracking |
+| M4 | Copy only from verified claims; the agent registry as a publication target | A caption is produced with every sentence tied to a claim; publishing to the registry appears in tracking. A working prototype of the first half already exists here: `node src/cli.ts caption` (writer, sentence-by-sentence checker, list of what was refused) |
 | M5 | Showroom, search and consented lead capture inside the product; negotiation behind a feature flag | A buyer's contact reaches the broker's calendar with its fit |
 
 Every phase keeps the existing publishing in dry-run by default, as AgentSales already does.
@@ -93,7 +93,7 @@ Both use AgentSales' own column format, so AgentSales needs no change:
 - **Out:** `node src/cli.ts export-agentsales <id…|--all> --format csv|json [--base <url>] [--plain]` writes a
   row per listing. `amenities` carries what the video verified, then the amenities the broker had already
   declared; nothing that was only said in a voice note, and never held-back or subjective claims. The
-  optional `aval_*` columns (showroom link, verified-fact count, document-review status) need a
+  optional `aval_*` columns (showroom link, verified-fact count, document-review status, the Spanish Instagram caption) need a
   configurable field in AgentSales; use `--plain` to leave them out. The file contains the real address:
   it is the broker's own data for the broker's own tool, so it stays out of any public place.
 

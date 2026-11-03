@@ -15,7 +15,7 @@ Muse Spark + SAM 3.1 + Muse Voice Transcribe).
 > **Built and tested:** video evidence (Muse Spark + SAM 3.1), voice notes (Muse Voice Transcribe),
 > signed-agent MCP gateway, search across listings, public pages with schema.org data, a buyer agent
 > on Muse Spark function calling, a signed Listing Passport, agent-to-agent negotiation under signed
-> mandates, a title-document review with page-level evidence, a buyer search and showroom with consented lead capture, and two red-teams. **Not built (roadmap):** a hosted marketplace,
+> mandates, a title-document review with page-level evidence, a buyer search and showroom with consented lead capture, verified-only copy for Instagram and the portals, and two red-teams. **Not built (roadmap):** a hosted marketplace,
 > buyer matching at scale, land for developers.
 
 ## The rule
@@ -77,6 +77,19 @@ dining tables, as a real flat would not). The Spanish voice note is synthetic (m
 | Prove the record | a **Listing Passport**: facts in a Merkle tree, signed by the issuer, verifiable offline; a single fact can be proven without revealing the others | `node src/cli.ts passport ...` |
 | Negotiate | the buyer's agent and the seller's agent trade offers **inside mandates their humans signed**; limits stay secret, the engine rejects anything outside authority, and prose cannot carry numbers | [docs/buyer-demo.md](docs/buyer-demo.md#scenario-g-two-agents-negotiate-each-inside-what-its-human-signed) |
 | Close the loop with humans | the result is a non-binding term sheet that needs two signatures from the principals; then a lawyer and a notary | `negotiation approve` |
+
+## Copy that can only say what is proven
+
+`node src/cli.ts caption <id> --channel instagram|portal --language es|en --base <url>` writes the caption for a
+listing from its facts, and shows, for every sentence, the evidence it rests on. The writer (Muse Spark, or a
+deterministic one offline) proposes sentences and names the facts behind each; then the code checks every
+sentence the way answers are checked: the facts must exist and be allowed in copy, every word and number must come
+from them, and no address, hidden price, taste word ("bright", "quiet") or contact detail may appear. What fails is
+dropped and listed, and so is everything that was left out and why: held back in the video, only said in a voice
+note (allowed with `--include-stated`), a taste word, the exact price under a range policy, the address. Spanish is a
+sentence-by-sentence translation of the verified English, dropped if a number changes. If almost nothing is proven,
+it refuses to write a caption instead of padding one. The result is hashed, and `export-agentsales` carries the
+Spanish Instagram caption in an `aval_caption` column.
 
 ## For the buyer: search, showroom, contact
 
@@ -144,7 +157,7 @@ matches the one inline script, and register a `get_listing_facts` tool through W
 
 Benign questions are still answered (0 / 6 missed). A second battery attacks everything around the
 model without any model (who can tell what exists, scraping, forged identities, hostile sellers,
-hostile callers, the audit chain, forged mandates, smuggled limits, a hijacked seller agent, and the buyer pages: stolen files, cross-site posts, planted scripts, personal data in logs): **114 / 114 attacks blocked**, mutation-tested, in
+hostile callers, the audit chain, forged mandates, smuggled limits, a hijacked seller agent, and the buyer pages: stolen files, cross-site posts, planted scripts, personal data in logs): **119 / 119 attacks blocked**, mutation-tested, in
 [docs/redteam-tools.md](docs/redteam-tools.md). Both red-teams found real holes in the first versions
 (an existence oracle, a symmetric price range, seller text planted as facts, a model asserting
 "no"...); all are fixed and the history shows when. Details, every attack and the honest limits:
