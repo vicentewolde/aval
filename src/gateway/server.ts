@@ -11,6 +11,7 @@ import type { IntentParser } from "./intent.ts";
 import { handlePublicRequest } from "./pages.ts";
 import type { Caller } from "./policy.ts";
 import { CriteriaSchema } from "./search.ts";
+import type { AnswerTranslator } from "./translate.ts";
 
 const MAX_BODY = 64 * 1024;
 
@@ -226,8 +227,16 @@ export function startGateway(
   store?: Store,
   issuer?: Issuer,
   intent?: IntentParser,
+  translate?: AnswerTranslator,
 ): Promise<Server> {
-  const buyerWeb = store ? createBuyerWeb({ store, core, ...(intent ? { intent } : {}) }) : null;
+  const buyerWeb = store
+    ? createBuyerWeb({
+        store,
+        core,
+        ...(intent ? { intent } : {}),
+        ...(translate ? { translate } : {}),
+      })
+    : null;
   const http = createServer(async (req, res) => {
     if (store && handlePublicRequest(req, res, store, issuer)) return;
     if (buyerWeb && (await buyerWeb(req, res))) return;

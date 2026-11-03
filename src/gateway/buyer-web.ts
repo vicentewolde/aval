@@ -20,6 +20,7 @@ import {
 } from "./pages.ts";
 import { assertMayRead, type Caller } from "./policy.ts";
 import { type Criteria, CriteriaSchema, type Match, searchListings } from "./search.ts";
+import { type AnswerTranslator, looksSpanish } from "./translate.ts";
 
 /**
  * The human side of the registry: a search page that understands what a buyer types, a showroom per
@@ -50,6 +51,7 @@ export interface BuyerWebDeps {
   store: Store;
   core: GatewayCore;
   intent?: IntentParser;
+  translate?: AnswerTranslator;
 }
 
 const EXTRA_STYLE = `
@@ -261,7 +263,7 @@ const show=(box,text,cls)=>{box.replaceChildren();const p=document.createElement
 if(askF)askF.addEventListener('submit',async e=>{e.preventDefault();const box=document.getElementById('answer');const q=askF.q.value.trim();if(!q)return;show(box,'Checking the verified facts...');
 const r=await post('/l/'+encodeURIComponent(id)+'/ask',{question:q});
 if(r.status!==200){show(box,r.json.message||'Could not answer right now.','err');return}
-show(box,r.json.answer);const ul=document.createElement('ul');ul.className='cit';for(const c of r.json.citations||[]){const li=document.createElement('li');li.textContent=(LABEL[c.provenance]||c.provenance)+': '+c.evidence;ul.appendChild(li)}box.appendChild(ul)});
+const tr=r.json.translation;if(tr&&tr.text){show(box,tr.text);const o=document.createElement('div');o.className='m';o.textContent='Verified wording (English): '+r.json.answer+' · The Spanish is an automatic translation of that.';box.appendChild(o)}else{show(box,r.json.answer)}const ul=document.createElement('ul');ul.className='cit';for(const c of r.json.citations||[]){const li=document.createElement('li');li.textContent=(LABEL[c.provenance]||c.provenance)+': '+c.evidence;ul.appendChild(li)}box.appendChild(ul)});
 document.querySelectorAll('[data-q]').forEach(el=>el.addEventListener('click',()=>{if(askF){askF.q.value=el.dataset.q;askF.requestSubmit()}}));
 const leadF=document.getElementById('lead');
 if(leadF)leadF.addEventListener('submit',async e=>{e.preventDefault();const box=document.getElementById('leadout');
@@ -470,7 +472,11 @@ export function createBuyerWeb(deps: BuyerWebDeps) {
       if (q.trim()) {
         const parser = parses.allow(ip, 40) ? intent : rule;
         if (parser === rule && intent !== rule) note = "Too many requests: used the basic reader.";
-        criteria = await parser.parse(q, communes);
+        const reading = await parser.parse(q, communes);
+        criteria = reading.criteria;
+        if (reading.reader === "rules" && !(intent instanceof RuleIntentParser))
+          note =
+            "The language model was unavailable, so a basic reader was used: check what was understood.";
       }
       criteria = { ...criteria, ...criteriaFromParams(url.searchParams) };
       const r = searchListings(listings, PUBLIC, { ...criteria, limit: 10 });
@@ -525,7 +531,14 @@ export function createBuyerWeb(deps: BuyerWebDeps) {
             code: r.code,
             message: r.message,
           });
-        else sendJson(res, 200, { answer: r.data.answer, citations: r.data.citations });
+        else {
+          let translation: { language: "es"; text: string } | null = null;
+          if (deps.translate && r.data.refused === null && looksSpanish(question)) {
+            const t = await deps.translate.toSpanish(r.data.answer);
+            if (t) translation = { language: "es", text: t };
+          }
+          sendJson(res, 200, { answer: r.data.answer, citations: r.data.citations, translation });
+        }
         return true;
       }
       const r = await deps.core.captureLead(PUBLIC, id, body.value);

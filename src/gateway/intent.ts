@@ -9,8 +9,14 @@ import { type Criteria, CriteriaSchema } from "./search.ts";
  * listing, so there is nothing for a hostile request to extract, and whatever it returns must pass
  * CriteriaSchema. The page shows the buyer what was understood so a misreading is visible.
  */
+export interface IntentReading {
+  criteria: Criteria;
+  /** "model" when Muse Spark read it; "rules" for the free parser (also when the model was unavailable). */
+  reader: "model" | "rules";
+}
+
 export interface IntentParser {
-  parse(text: string, knownCommunes: string[]): Promise<Criteria>;
+  parse(text: string, knownCommunes: string[]): Promise<IntentReading>;
 }
 
 export const MAX_REQUEST_CHARS = 300;
@@ -58,7 +64,7 @@ function parseAmount(raw: string): number | null {
 
 /** Deterministic parser: free, offline, and the fallback when the model is unavailable or answers badly. */
 export class RuleIntentParser implements IntentParser {
-  async parse(text: string, knownCommunes: string[]): Promise<Criteria> {
+  async parse(text: string, knownCommunes: string[]): Promise<IntentReading> {
     const raw = text.slice(0, MAX_REQUEST_CHARS);
     const t = stripAccents(raw.toLowerCase());
     const c: Criteria = {};
@@ -102,7 +108,7 @@ export class RuleIntentParser implements IntentParser {
 
     const have = FEATURES.filter(([re]) => re.test(t)).map(([, term]) => term);
     if (have.length > 0) c.must_have = [...new Set(have)].slice(0, 8);
-    return CriteriaSchema.parse(c);
+    return { criteria: CriteriaSchema.parse(c), reader: "rules" };
   }
 }
 
@@ -137,7 +143,7 @@ export class MuseIntentParser implements IntentParser {
     this.fallback = fallback;
   }
 
-  async parse(text: string, knownCommunes: string[]): Promise<Criteria> {
+  async parse(text: string, knownCommunes: string[]): Promise<IntentReading> {
     const request = text.slice(0, MAX_REQUEST_CHARS);
     try {
       const r = await this.client.respond({
@@ -172,7 +178,7 @@ export class MuseIntentParser implements IntentParser {
         .map((x) => x.toLowerCase().trim())
         .filter((x) => x.length >= 2 && x.length <= 40);
       if (have.length > 0) c.must_have = [...new Set(have)].slice(0, 8);
-      return CriteriaSchema.parse(c);
+      return { criteria: CriteriaSchema.parse(c), reader: "model" };
     } catch {
       // The model is unavailable, over budget or answered off-schema: the free parser still gives a usable reading.
       return this.fallback.parse(text, knownCommunes);

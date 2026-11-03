@@ -27,6 +27,7 @@ import type { LeadRecord } from "./gateway/leads.ts";
 import { OfflineAnswerModel } from "./gateway/offline-model.ts";
 import { CriteriaSchema } from "./gateway/search.ts";
 import { startGateway } from "./gateway/server.ts";
+import { MuseTranslator } from "./gateway/translate.ts";
 import { MetaClient } from "./meta/client.ts";
 import {
   type BuyerMandate,
@@ -326,6 +327,7 @@ async function main(): Promise<void> {
           ? { id: "aval-issuer", privateKeyPem: readFileSync(issuerKey, "utf8") }
           : undefined,
         values.offline ? new RuleIntentParser() : new MuseIntentParser(client(guard)),
+        values.offline ? undefined : new MuseTranslator(client(guard)),
       );
       console.log(`Buyer pages: http://127.0.0.1:${port}/search (search) and /l/<id>/showroom`);
       console.log(

@@ -241,3 +241,92 @@ describe("ask and lead endpoints", () => {
     expect(last).toBe(429);
   });
 });
+
+describe("when the language model is unavailable", () => {
+  it("the page says a basic reader was used, instead of hiding it", async () => {
+    const dir2 = mkdtempSync(join(tmpdir(), "aval-web2-"));
+    const store = new Store(dir2);
+    store.saveListing(fx("demo-1"));
+    const core = new GatewayCore({
+      store,
+      model: new OfflineAnswerModel(),
+      audit: new AuditLog(join(dir2, "audit.jsonl")),
+    });
+    const { MuseIntentParser } = await import("../src/gateway/intent.ts");
+    const broken = new MuseIntentParser({
+      respond: async () => {
+        throw new Error("over budget");
+      },
+    } as never);
+    const http = await startGateway(
+      core,
+      new AgentRegistry([]),
+      0,
+      "127.0.0.1",
+      store,
+      undefined,
+      broken,
+    );
+    const b = `http://127.0.0.1:${(http.address() as AddressInfo).port}`;
+    try {
+      const html = await (
+        await fetch(`${b}/search?q=${encodeURIComponent("2 dormitorios en Nunoa")}`)
+      ).text();
+      expect(html).toContain("language model was unavailable");
+      expect(html).toContain("2+ bedrooms");
+    } finally {
+      http.close();
+    }
+  });
+  it("the offline reader does not claim a model was missing", async () => {
+    const html = await (
+      await fetch(`${base}/search?q=${encodeURIComponent("2 dormitorios")}`)
+    ).text();
+    expect(html).not.toContain("language model was unavailable");
+  });
+});
+
+describe("Spanish questions", () => {
+  it("shows the translation of the verified answer next to the verified wording", async () => {
+    const dir3 = mkdtempSync(join(tmpdir(), "aval-web3-"));
+    const store = new Store(dir3);
+    store.saveListing(fx("demo-1"));
+    const core = new GatewayCore({
+      store,
+      model: new OfflineAnswerModel(),
+      audit: new AuditLog(join(dir3, "audit.jsonl")),
+    });
+    const translate = { toSpanish: async (t: string) => `ES: ${t}` };
+    const http = await startGateway(
+      core,
+      new AgentRegistry([]),
+      0,
+      "127.0.0.1",
+      store,
+      undefined,
+      undefined,
+      translate,
+    );
+    const b = `http://127.0.0.1:${(http.address() as AddressInfo).port}`;
+    try {
+      const es = await (
+        await fetch(`${b}/l/demo-1/ask`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ question: "¿Does it have a bathtub?" }),
+        })
+      ).json();
+      expect(es.translation.text).toMatch(/^ES: /);
+      const en = await (
+        await fetch(`${b}/l/demo-1/ask`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ question: "Does it have a bathtub?" }),
+        })
+      ).json();
+      expect(en.translation).toBeNull();
+    } finally {
+      http.close();
+    }
+  });
+});
