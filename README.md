@@ -92,6 +92,10 @@ The same registry has a human side (`node src/cli.ts serve`, then `/search`):
   and questions about the home. The video is shown only if the seller's policy sets `publicMedia`.
   Answers are verified in English; a question in Spanish gets a translation of the verified answer next to
   the verified wording, and the translation is dropped if a single number differs.
+- **Saved searches** (a box under the results, same consent rule): `node src/cli.ts alerts` lists them and the new
+  homes that now match each one (checked automatically after `ingest` and `import-agentsales`, or with
+  `alerts run`). Only homes that appear after the search was saved are matched, with the same evidence and the
+  same "unconfirmed". Sending the notice (email, WhatsApp) is **not built**: the match waits for the broker.
 - **Contact** (a form with an explicit consent box): the broker gets a lead (`node src/cli.ts leads`) that says
   how well the home fits what the buyer searched for. Personal data never goes into the audit log or any
   public page, and a buyer can be deleted with `leads delete`.
@@ -135,7 +139,7 @@ matches the one inline script, and register a `get_listing_facts` tool through W
 
 Benign questions are still answered (0 / 6 missed). A second battery attacks everything around the
 model without any model (who can tell what exists, scraping, forged identities, hostile sellers,
-hostile callers, the audit chain, forged mandates, smuggled limits, a hijacked seller agent, and the buyer pages: stolen files, cross-site posts, planted scripts, personal data in logs): **101 / 101 attacks blocked**, mutation-tested, in
+hostile callers, the audit chain, forged mandates, smuggled limits, a hijacked seller agent, and the buyer pages: stolen files, cross-site posts, planted scripts, personal data in logs): **110 / 110 attacks blocked**, mutation-tested, in
 [docs/redteam-tools.md](docs/redteam-tools.md). Both red-teams found real holes in the first versions
 (an existence oracle, a symmetric price range, seller text planted as facts, a model asserting
 "no"...); all are fixed and the history shows when. Details, every attack and the honest limits:

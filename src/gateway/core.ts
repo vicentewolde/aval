@@ -5,6 +5,7 @@ import { publicSummary, type TitleReview, verifyReviewHash } from "../diligence/
 import type { Action } from "../negotiation/engine.ts";
 import type { NegotiationService } from "../negotiation/service.ts";
 import type { Store } from "../store.ts";
+import { AlertInputSchema, type AlertRecord } from "./alerts.ts";
 import type { AnswerModel, AnswerResult } from "./answer.ts";
 import { answerQuestion } from "./answer.ts";
 import type { AuditLog } from "./audit.ts";
@@ -64,6 +65,7 @@ export class GatewayCore {
   private readonly asks = new Map<string, number[]>();
   private readonly searches = new Map<string, number[]>();
   private readonly leads = new Map<string, number[]>();
+  private readonly alerts = new Map<string, number[]>();
 
   constructor(deps: Deps) {
     this.deps = deps;
@@ -292,6 +294,47 @@ export class GatewayCore {
       };
       this.deps.store.appendJsonl("leads.jsonl", rec);
       return { value: { lead_id: rec.id, duplicate: false, fit: rec.fit } };
+    });
+  }
+
+  /**
+   * A buyer asks to be told when a NEW home that fits their search appears. Explicit consent only; the
+   * contact goes to the alerts file, never to the audit log. The alert remembers which listings already
+   * existed, so it is about what appears later (see runAlerts).
+   */
+  createAlert(caller: Caller, raw: unknown) {
+    return this.guarded(caller, "create_alert", "", async () => {
+      this.rateLimit(caller, LEADS_PER_HOUR, this.alerts);
+      const parsed = AlertInputSchema.safeParse(raw);
+      if (!parsed.success)
+        throw new PolicyDenied(
+          "INVALID_ALERT",
+          parsed.error.issues.some((i) => i.path[0] === "consent")
+            ? "The buyer must agree to be contacted."
+            : `Check the form: ${parsed.error.issues.map((i) => i.path.join(".") || "form").join(", ")}.`,
+        );
+      const input = parsed.data;
+      const contact = cleanNote(input.contact);
+      const criteria = JSON.stringify(input.criteria);
+      const existing = this.deps.store
+        .readJsonl<AlertRecord>("alerts.jsonl")
+        .find(
+          (a) =>
+            a.contact.toLowerCase() === contact.toLowerCase() &&
+            JSON.stringify(a.criteria) === criteria,
+        );
+      if (existing) return { value: { alert_id: existing.id, duplicate: true } };
+      const rec: AlertRecord = {
+        id: `alert-${randomUUID().slice(0, 8)}`,
+        at: this.now().toISOString(),
+        contact,
+        name: cleanNote(input.name ?? "").slice(0, 80),
+        criteria: input.criteria,
+        text: cleanNote(input.text ?? "").slice(0, 300),
+        seen: this.deps.store.listListings().map((l) => l.id),
+      };
+      this.deps.store.appendJsonl("alerts.jsonl", rec);
+      return { value: { alert_id: rec.id, duplicate: false } };
     });
   }
 

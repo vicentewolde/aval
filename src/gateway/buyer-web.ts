@@ -205,6 +205,30 @@ const EXAMPLES = [
   "house in La Reina with garden and parking",
 ];
 
+/** The search page's only script: static text, so its hash is fixed. It posts the alert form as JSON. */
+const SEARCH_SCRIPT = `(()=>{
+const f=document.getElementById('alert');if(!f)return;
+const box=document.getElementById('alertout');
+const show=(t,c)=>{box.replaceChildren();const p=document.createElement('div');p.textContent=t;if(c)p.className=c;box.appendChild(p)};
+f.addEventListener('submit',async e=>{e.preventDefault();
+if(!f.consent.checked){show('Please tick the box so we may contact you.','err');return}
+let criteria;try{criteria=JSON.parse(document.body.dataset.criteria||'{}')}catch(x){criteria={}}
+const body={contact:f.contact.value,consent:true,criteria,text:document.body.dataset.q||''};if(f.name.value)body.name=f.name.value;
+let r;try{const res=await fetch('/alerts',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});r={status:res.status,json:await res.json().catch(()=>({}))}}catch(x){r={status:0,json:{}}}
+if(r.status!==200){show(r.json.message||'Could not save the alert right now.','err');return}
+show(r.json.duplicate?'You already have this alert.':'Saved. You will be told when a new home that fits appears.');f.reset()});
+})();`;
+export const SEARCH_SCRIPT_HASH = createHash("sha256").update(SEARCH_SCRIPT).digest("base64");
+
+function alertBox(criteria: Criteria, q: string): string {
+  if (Object.keys(criteria).filter((k) => k !== "limit").length === 0) return "";
+  return `<div class="box"><b>Tell me when a new home like this appears</b>
+<form id="alert" class="f" autocomplete="off"><label for="ac">Email or phone</label><input id="ac" name="contact" maxlength="120" required>
+<label for="an">Your name (optional)</label><input id="an" name="name" maxlength="80">
+<div class="cb"><input id="ak" type="checkbox" name="consent"><label for="ak" style="margin:0">I agree to be contacted about homes that fit this search and that my details are kept for that purpose. I can ask for them to be deleted.</label></div>
+<button class="btn" type="submit">Save this search</button><p class="m">Demo build: use invented details. Only homes that appear after you save are matched; sending the notice is done by the broker for now.</p></form><div id="alertout" aria-live="polite"></div></div>`;
+}
+
 function renderSearch(
   q: string,
   criteria: Criteria,
@@ -224,7 +248,7 @@ function renderSearch(
       : "";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Find a home · Aval</title><meta name="description" content="Search homes where every fact carries its proof.">
-<style>${STYLE}${EXTRA_STYLE}</style></head><body>
+<style>${STYLE}${EXTRA_STYLE}</style></head><body data-q="${esc(q)}" data-criteria="${esc(JSON.stringify(criteria))}">
 <div class="top"><h1>Find a home</h1><span class="m"><a href="/listings">All listings</a> · <a href="/.well-known/aval.json">for agents</a></span></div>
 <div class="hero"><form method="get" action="/search">
 <label for="q"><b>Describe what you are looking for</b> <span class="m">(Spanish or English)</span></label>
@@ -245,8 +269,9 @@ ${chips.length > 0 ? `<p><b>I understood:</b></p><div class="chips">${chips.map(
 <h2>${results.matches.length} ${results.matches.length === 1 ? "home" : "homes"}</h2>
 ${results.matches.map((m) => matchCard(m, criteria)).join("") || `<div class="box">No home matches yet. Try fewer requirements.</div>`}
 ${excluded}
+${alertBox(criteria, q)}
 <p class="m">Ranking is deterministic and uses only what each seller allows to be shown. The language model only translates your words into the filters above; it never sees the listings.</p>
-</body></html>`;
+<script>${SEARCH_SCRIPT}</script></body></html>`;
 }
 
 /** The showroom's only script: static text (so its hash is fixed). Everything it shows is set with textContent. */
@@ -436,6 +461,7 @@ export function createBuyerWeb(deps: BuyerWebDeps) {
   const searches = new Limiter();
   const asks = new Limiter();
   const leads = new Limiter();
+  const alertsLimit = new Limiter();
 
   return async function handleBuyerRequest(
     req: IncomingMessage,
@@ -485,8 +511,28 @@ export function createBuyerWeb(deps: BuyerWebDeps) {
         res,
         200,
         renderSearch(q, criteria, r, communes, note),
-        "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+        `default-src 'none'; style-src 'unsafe-inline'; connect-src 'self'; script-src 'sha256-${SEARCH_SCRIPT_HASH}'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'`,
       );
+      return true;
+    }
+
+    if (path === "/alerts" && req.method === "POST") {
+      if (!alertsLimit.allow(ip, 10)) {
+        sendJson(res, 429, { message: "Too many requests this hour." });
+        return true;
+      }
+      const body = await readJson(req);
+      if (!body.ok) {
+        sendJson(res, body.status, { message: body.message });
+        return true;
+      }
+      const r = await deps.core.createAlert(PUBLIC, body.value);
+      if (!r.ok)
+        sendJson(res, r.code === "INVALID_ALERT" ? 400 : r.code === "RATE_LIMITED" ? 429 : 500, {
+          code: r.code,
+          message: r.message,
+        });
+      else sendJson(res, 200, r.data);
       return true;
     }
 

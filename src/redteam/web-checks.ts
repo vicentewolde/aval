@@ -176,6 +176,57 @@ export async function runWebChecks(base: string, store: Store): Promise<CheckRes
     !readFileSync(join(store.root, "audit.jsonl"), "utf8").includes("evil@example.com"),
   );
 
+  const alert = (over: Record<string, unknown> = {}, headers: Record<string, string> = {}) =>
+    post(
+      "/alerts",
+      { contact: "watcher@example.com", consent: true, criteria: { commune: "Nunoa" }, ...over },
+      headers,
+    );
+  check(
+    "a cross-site post to the alerts endpoint is refused",
+    (await alert({}, { origin: "https://evil.example" })).status === 403,
+  );
+  check(
+    "a form-encoded post to the alerts endpoint is refused",
+    (await post("/alerts", "contact=a", { "content-type": "application/x-www-form-urlencoded" }))
+      .status === 415,
+  );
+  check("an alert without consent is refused", (await alert({ consent: false })).status === 400);
+  check(
+    "an alert with no real criterion is refused",
+    (await alert({ criteria: {} })).status === 400,
+  );
+  const planted2 = "<script>alert(7)</script>\u001b[2J";
+  check(
+    "an alert carrying a script is accepted as plain data",
+    (await alert({ contact: "scripted@example.com", name: `Eve ${planted2}`, text: planted2 }))
+      .status === 200,
+  );
+  const alertRecords = readFileSync(join(store.root, "alerts.jsonl"), "utf8")
+    .split("\n")
+    .filter((l) => l.trim())
+    .map((l) => JSON.parse(l) as { name: string; text: string });
+  check(
+    "control characters are stripped before an alert is stored",
+    alertRecords.length > 0 &&
+      alertRecords.every((x) => !control.test(x.name) && !control.test(x.text)),
+  );
+  const pages2 =
+    (await (await fetch(`${base}/search?q=hola`)).text()) +
+    (await (await fetch(`${base}/listings`)).text());
+  check(
+    "an alert is never rendered on a public page",
+    !pages2.includes("alert(7)") && !pages2.includes("scripted@example.com"),
+  );
+  check(
+    "an alert's contact never reaches the audit log",
+    !readFileSync(join(store.root, "audit.jsonl"), "utf8").includes("scripted@example.com"),
+  );
+  let alertLimited = false;
+  for (let i = 0; i < 14 && !alertLimited; i++)
+    alertLimited = (await alert({ contact: `flood${i}@example.com` })).status === 429;
+  check("flooding the alerts form is cut off", alertLimited);
+
   let limited = false;
   for (let i = 0; i < 14 && !limited; i++)
     limited =

@@ -18,6 +18,7 @@ import {
 import { ingestVideo, ingestVoice } from "./extract/ingest.ts";
 import { MuseProposer, SamSegmenter } from "./extract/muse.ts";
 import { MuseVoiceProposer } from "./extract/voice.ts";
+import { type AlertMatch, type AlertRecord, runAlerts } from "./gateway/alerts.ts";
 import { MuseAnswerModel } from "./gateway/answer-model.ts";
 import { AuditLog, verifyChain } from "./gateway/audit.ts";
 import { GatewayCore, type VisitRecord } from "./gateway/core.ts";
@@ -71,6 +72,13 @@ function client(guard: SpendGuard): MetaClient {
   return new MetaClient({ apiKey, guard });
 }
 
+/** After new supply arrives, see whether any saved search now has a match. Delivering the notice is not built. */
+function reportAlerts(store: Store): void {
+  const fresh = runAlerts(store);
+  if (fresh.length > 0)
+    console.log(`${fresh.length} saved search(es) now match a new home: node src/cli.ts alerts`);
+}
+
 const USAGE = `aval <command>
 
   ingest <video> --id <id> --declared <file.json> [--policy <file.json>] [--broker <name>]
@@ -82,6 +90,7 @@ const USAGE = `aval <command>
   serve [--port 8787] [--offline]          MCP gateway for buyer agents
   agent-keygen <id> <name> <operator>      create a signing key and register the agent
   visits [approve|decline <visit-id>]      visit requests from agents (a human decides)
+  alerts [run|delete <alert-id>]           saved buyer searches and the new homes that now match them (sending the notice is not built)
   leads [--id <listing>]|delete <lead-id>  buyers who asked to be contacted from the showroom, with how well the home fits what they searched
   edit <listing> <claim> "<new wording>"   broker correction (feeds the taste module)
   taste                                    what the corrections taught, and eval cases
@@ -159,6 +168,7 @@ async function main(): Promise<void> {
         console.log(`\n${r.listing.claims.length} claims:`, r.counts);
         console.log(`spent so far: $${guard.spentUsd.toFixed(4)} of $${guard.budgetUsd}`);
         console.log(`next: node src/cli.ts report ${values.id}`);
+        reportAlerts(store);
       } finally {
         await segmenter.close();
       }
@@ -214,6 +224,7 @@ async function main(): Promise<void> {
           `${imp.id}: ${imp.declared.title}, ${imp.extraClaims.length + 7} declared facts${values.video ? " + video evidence" : " (declared only: add a video to verify)"}`,
         );
       }
+      reportAlerts(store);
       return;
     }
     case "search": {
@@ -410,6 +421,52 @@ async function main(): Promise<void> {
           `${l.id}  ${l.at.slice(0, 16)}  ${l.listing_id}  ${clean(l.name)}  <${clean(l.contact)}>${l.slot ? `  visit: ${l.slot}` : ""}`,
         );
         console.log(`    ${fit}${l.message ? `\n    "${clean(l.message)}"` : ""}`);
+      }
+      return;
+    }
+    case "alerts": {
+      const [sub, alertId] = positionals;
+      const alerts = store.readJsonl<AlertRecord>("alerts.jsonl");
+      const path = join(store.root, "alerts.jsonl");
+      if (sub === "run") {
+        const fresh = runAlerts(store);
+        console.log(
+          fresh.length === 0
+            ? "no new matches"
+            : `${fresh.length} new match(es): node src/cli.ts alerts`,
+        );
+        return;
+      }
+      if (sub === "delete") {
+        if (!alertId || !alerts.some((a) => a.id === alertId))
+          throw new Error("alerts delete <alert-id>");
+        writeFileSync(
+          path,
+          alerts
+            .filter((a) => a.id !== alertId)
+            .map((a) => `${JSON.stringify(a)}\n`)
+            .join(""),
+        );
+        const mpath = join(store.root, "alert-matches.jsonl");
+        const keep = store
+          .readJsonl<AlertMatch>("alert-matches.jsonl")
+          .filter((m) => m.alert_id !== alertId);
+        writeFileSync(mpath, keep.map((m) => `${JSON.stringify(m)}\n`).join(""));
+        console.log(`deleted ${alertId} (the buyer's details are gone)`);
+        return;
+      }
+      if (alerts.length === 0) console.log("no saved searches yet");
+      const matches = store.readJsonl<AlertMatch>("alert-matches.jsonl");
+      const clean = (x: string) => x.replace(/[\u0000-\u001f\u007f-\u009f]/g, " ");
+      for (const a of alerts) {
+        console.log(
+          `${a.id}  ${a.at.slice(0, 16)}  ${clean(a.name || "(no name)")}  <${clean(a.contact)}>  watching since ${a.seen.length} listings existed`,
+        );
+        console.log(`    search: ${clean(a.text) || JSON.stringify(a.criteria)}`);
+        for (const m of matches.filter((x) => x.alert_id === a.id))
+          console.log(
+            `    NEW MATCH ${m.listing_id} (${m.fit === "all_met" ? "everything met" : `to confirm: ${m.unconfirmed.join(", ")}`}) at ${m.at.slice(0, 16)}`,
+          );
       }
       return;
     }

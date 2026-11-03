@@ -109,10 +109,14 @@ describe("search page", () => {
     expect(html).not.toMatch(/Irarrazaval|3550|4900|floor/i);
     expect(html).not.toContain("private-1");
   });
-  it("sends a CSP without scripts", async () => {
+  it("sends a CSP that allows only its own hashed script", async () => {
     const r = await fetch(`${base}/search`);
-    expect(r.headers.get("content-security-policy")).toContain("default-src 'none'");
-    expect(r.headers.get("content-security-policy")).not.toContain("script-src");
+    const csp = r.headers.get("content-security-policy") ?? "";
+    expect(csp).toContain("default-src 'none'");
+    expect(csp).toMatch(/script-src 'sha256-[A-Za-z0-9+/=]+'/);
+    expect(csp).not.toMatch(/script-src[^;]*unsafe/);
+    const html = await r.text();
+    expect((html.match(/<script>/g) ?? []).length).toBe(1);
   });
 });
 
@@ -175,6 +179,29 @@ describe("media", () => {
     ])
       expect((await fetch(`${base}${p}`)).status).toBe(404);
     expect((await fetch(`${base}/l/duplex-las-condes/media/clip.mp4`)).status).toBe(404);
+  });
+});
+
+describe("alerts endpoint", () => {
+  const body = (over: Record<string, unknown> = {}) => ({
+    contact: "alert@example.com",
+    consent: true,
+    criteria: { commune: "Nunoa" },
+    ...over,
+  });
+  it("saves a search with consent", async () => {
+    const r = await post("/alerts", body());
+    expect(r.status).toBe(200);
+    expect((await r.json()).duplicate).toBe(false);
+  });
+  it("refuses cross-site, form-encoded, no-consent and criteria-less posts", async () => {
+    expect((await post("/alerts", body(), { origin: "https://evil.example" })).status).toBe(403);
+    expect(
+      (await post("/alerts", "contact=a", { "content-type": "application/x-www-form-urlencoded" }))
+        .status,
+    ).toBe(415);
+    expect((await post("/alerts", body({ consent: false }))).status).toBe(400);
+    expect((await post("/alerts", body({ criteria: {} }))).status).toBe(400);
   });
 });
 

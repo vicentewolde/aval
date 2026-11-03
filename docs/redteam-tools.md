@@ -2,10 +2,10 @@
 
 Deterministic attacks on the gateway itself: who can tell what exists, how much a caller may ask, how
 identities are forged, what a hostile seller can plant, and whether the audit trail survives. No model and
-no spend; the same 101 checks run in the test suite (`test/redteam-tools.test.ts`). Regenerate with
+no spend; the same 110 checks run in the test suite (`test/redteam-tools.test.ts`). Regenerate with
 `node scripts/redteam-tools.ts`.
 
-**Result: 101 of 101 attacks failed to get through.**
+**Result: 110 of 110 attacks failed to get through.**
 
 | Category | Checks | Passed |
 |---|---|---|
@@ -16,7 +16,7 @@ no spend; the same 101 checks run in the test suite (`test/redteam-tools.test.ts
 | hostile seller | 10 | 10 |
 | hostile caller | 2 | 2 |
 | audit | 3 | 3 |
-| web | 26 | 26 |
+| web | 35 | 35 |
 | negotiation | 36 | 36 |
 
 ## existence
@@ -106,6 +106,15 @@ no spend; the same 101 checks run in the test suite (`test/redteam-tools.test.ts
 - PASS control characters are stripped before a lead is stored
 - PASS a lead is never rendered on a public page
 - PASS personal data never reaches the audit log
+- PASS a cross-site post to the alerts endpoint is refused
+- PASS a form-encoded post to the alerts endpoint is refused
+- PASS an alert without consent is refused
+- PASS an alert with no real criterion is refused
+- PASS an alert carrying a script is accepted as plain data
+- PASS control characters are stripped before an alert is stored
+- PASS an alert is never rendered on a public page
+- PASS an alert's contact never reaches the audit log
+- PASS flooding the alerts form is cut off
 - PASS flooding the lead form is cut off
 
 ## negotiation
