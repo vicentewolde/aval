@@ -220,7 +220,8 @@ export class NegotiationService {
     const dir = this.dir("negotiations");
     return readdirSync(dir)
       .filter((f) => /^neg-[0-9a-f]{8}\.json$/.test(f))
-      .map((f) => JSON.parse(readFileSync(join(dir, f), "utf8")) as Stored);
+      .map((f) => JSON.parse(readFileSync(join(dir, f), "utf8")) as Stored)
+      .sort((a, b) => a.state.created_at.localeCompare(b.state.created_at));
   }
 
   private load(agentId: string, id: string): Stored | null {
