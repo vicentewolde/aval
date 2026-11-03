@@ -119,6 +119,11 @@ No AgentSales code is imported and AgentSales needs no change: the contract is
 `src/adapters/agentsales.ts`. Its internal notes and the broker's taste words ("destacados") are
 dropped on purpose and cannot be imported (tested). `node src/cli.ts import-agentsales fixtures/agentsales-export.json`.
 
+The reverse also exists: `node src/cli.ts export-agentsales <id…|--all> --format csv` writes each listing as a row
+in the same column format (`src/adapters/agentsales-export.ts`), with the video-verified facts first in
+`amenities` and never anything that was only said, held back or subjective, and with spreadsheet formulas
+defused. How the two tools become one product after the hackathon: [docs/merge-with-agentsales.md](docs/merge-with-agentsales.md).
+
 ## Public pages for agents that do not speak MCP
 
 The gateway also serves, from the same policy door as MCP (anonymous tier): `/listings` and

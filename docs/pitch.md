@@ -49,7 +49,7 @@ People now ask AI agents to find them a home. Small brokers are invisible to tho
 
 ## What is built and what is not
 
-**Built and tested (228 automated tests, none calling the real API; real-model runs documented in `docs/`):** video evidence, voice notes, title review, signed passport, negotiation under signed mandates, MCP gateway, search, public pages, AgentSales adapter, buyer agent, both red-teams, taste module that turns broker corrections into style notes and eval cases.
+**Built and tested (237 automated tests, none calling the real API; real-model runs documented in `docs/`):** video evidence, voice notes, title review, signed passport, negotiation under signed mandates, MCP gateway, search, public pages, AgentSales adapter, buyer agent, both red-teams, taste module that turns broker corrections into style notes and eval cases.
 
 **Not built (roadmap):** a hosted registry or marketplace, buyer matching at scale and the delivery of alert notices (saved searches are matched, nothing is sent), land for developers, checking a certificate's authenticity with the registry (the review verifies the reading, not the forgery), OCR for scanned documents, an official Muse connector (access not available from Chile). The term sheet is preliminary and non-binding by design: a lawyer and a notary do the real closing.
 

@@ -34,7 +34,7 @@ Narration is about 388 words (about 2:35 spoken, the rest is pauses and on-scree
 - Red-team on the real model: 50 attack trials, **baseline 39 violations, Aval 0**; benign controls 0 of 6 missed. Second battery, no model: **110 of 110** attacks blocked (39 on the gateway and audit log, 36 on mandates and negotiation, 35 on the buyer pages), mutation-tested.
 - Title review on the real model: **3 of 3 sample sets classified correctly** (clear, needs attention, blocked), every finding with the page and the quote.
 - Negotiation on the real model (Muse Spark on both sides), run three times: agreed UF 4,990, 5,010 and (offline seller) 4,923; always inside the seller's floor (4,900) and the buyer's maximum (5,100).
-- 228 automated tests, none of which calls the real API.
+- 237 automated tests, none of which calls the real API.
 
 ## What to record, in order (commands from `~/dev/aval`)
 
@@ -62,6 +62,7 @@ Each agent run takes 20-120 s: record it whole and speed it up 3-4x in the edit.
 - Export 1080p, under 3:00 (the rubric reads the video first; do not exceed the limit).
 - Upload as unlisted (YouTube or Loom) and test the link in a private window before submitting.
 - Everything shown must be in the public repo; check `git status` is clean and the last commit is pushed.
+- Right after the final push and before submitting: `git tag hackathon-submission && git push origin hackathon-submission`. That tag is the state the judges see and the starting point of the merge plan (`docs/merge-with-agentsales.md`); never move it.
 
 ## Optional: "Most Viral Track" post (X)
 

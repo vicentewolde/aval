@@ -3,12 +3,14 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { importAgentSalesRow } from "./adapters/agentsales.ts";
+import { exportAgentSalesRow, toCsv } from "./adapters/agentsales-export.ts";
 import { runBuyerAgent } from "./agent/buyer.ts";
 import { connectAgent } from "./agent/signed-client.ts";
 import { DEFAULT_POLICY, DeclaredSchema, PolicySchema } from "./claims/schema.ts";
 import { declaredClaims } from "./claims/verify.ts";
 import { MuseDocReader } from "./diligence/reader.ts";
 import {
+  loadPublicReview,
   publicSummary,
   reviewAttachments,
   reviewTitle,
@@ -90,6 +92,7 @@ const USAGE = `aval <command>
   serve [--port 8787] [--offline]          MCP gateway for buyer agents
   agent-keygen <id> <name> <operator>      create a signing key and register the agent
   visits [approve|decline <visit-id>]      visit requests from agents (a human decides)
+  export-agentsales <id…>|--all            the reverse of import-agentsales: a row in the AgentSales column format (verified-only amenities; --format csv|json, --out, --base <url>, --plain)
   alerts [run|delete <alert-id>]           saved buyer searches and the new homes that now match them (sending the notice is not built)
   leads [--id <listing>]|delete <lead-id>  buyers who asked to be contacted from the showroom, with how well the home fits what they searched
   edit <listing> <claim> "<new wording>"   broker correction (feeds the taste module)
@@ -134,6 +137,11 @@ async function main(): Promise<void> {
       "seller-name": { type: "string" },
       "seller-rut": { type: "string" },
       public: { type: "boolean", default: false },
+      all: { type: "boolean", default: false },
+      format: { type: "string", default: "json" },
+      out: { type: "string" },
+      plain: { type: "boolean", default: false },
+      base: { type: "string" },
       row: { type: "string" },
       video: { type: "string" },
       anonymous: { type: "boolean", default: false },
@@ -422,6 +430,43 @@ async function main(): Promise<void> {
         );
         console.log(`    ${fit}${l.message ? `\n    "${clean(l.message)}"` : ""}`);
       }
+      return;
+    }
+    case "export-agentsales": {
+      const wanted = values.all ? store.listListings().map((l) => l.id) : positionals;
+      if (wanted.length === 0)
+        throw new Error(
+          "export-agentsales <id…> | --all [--format json|csv] [--out file] [--base <url>] [--plain]",
+        );
+      if (values.format !== "json" && values.format !== "csv")
+        throw new Error("--format must be json or csv");
+      const exported = wanted.map((id) => {
+        const l = store.loadListing(id);
+        if (!l) throw new Error(`no such listing: ${id}`);
+        const review = loadPublicReview(store.listingDir(id));
+        return exportAgentSalesRow(l, {
+          ...(values.base ? { base: values.base } : {}),
+          ...(review ? { reviewStatus: review.status } : {}),
+          plain: values.plain,
+        });
+      });
+      const body =
+        values.format === "csv" ? toCsv(exported) : `${JSON.stringify(exported, null, 2)}\n`;
+      const out =
+        values.out ??
+        join(
+          store.root,
+          "exports",
+          `agentsales-${values.all ? "all" : wanted.join("+")}.${values.format}`,
+        );
+      mkdirSync(join(out, ".."), { recursive: true });
+      writeFileSync(out, body, { mode: 0o600 });
+      console.log(
+        `${out}\n${exported.length} listing(s). The file holds the real addresses (your own data, for your own tool): do not publish it.`,
+      );
+      console.log(
+        `Verified-only amenities: ${exported.map((r) => `${r.id_propiedad}=${(r.amenities as string[]).length}`).join(", ")}`,
+      );
       return;
     }
     case "alerts": {
