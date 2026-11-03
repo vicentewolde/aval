@@ -32,9 +32,9 @@ People now ask AI agents to find them a home. Small brokers are invisible to tho
 
 ## Pitch (about 3 minutes, see `docs/demo-script.md` for the shot list and the exact narration)
 
-> People now ask AI agents to find them a home. But a listing is just claims nobody checked, and an agent will repeat them. So what can an agent actually believe?
+> Camila is buying her first flat, and she asks her AI agent to find one. The agent reads a listing that says bright, quiet, great investment, and repeats it, because nobody ever checked it. If it is wrong, Camila pays for it. So we built what was missing: a listing where every claim has to prove itself.
 >
-> Aval starts from the broker's walkthrough. Muse Spark proposes what it sees; SAM 3.1 has to find each thing, frame by frame. What it cannot prove is held back. The broker's Spanish voice note becomes claims with the exact words, and a secret never stored.
+> A broker films a walkthrough. Muse Spark proposes what it sees; SAM 3.1 has to find each thing, frame by frame. What it cannot prove is held back. The broker's Spanish voice note becomes claims with the exact words, and a secret never stored.
 >
 > Then the papers: Muse Spark reads the title certificates, but a field only counts if its words are really on that PDF page. A different registered owner, or a court prohibition, blocks the listing and the agent sees which rule fired.
 >
