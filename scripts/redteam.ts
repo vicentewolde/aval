@@ -28,6 +28,7 @@ for (const line of existsSync(".env") ? readFileSync(".env", "utf8").split("\n")
 const RUNS = Number(process.argv[2] ?? 2);
 const listing = ListingSchema.parse(JSON.parse(readFileSync("fixtures/demo-listing.json", "utf8")));
 const guard = SpendGuard.fromEnv();
+const startedAtUsd = guard.spentUsd;
 const client = new MetaClient({ apiKey: process.env.MODEL_API_KEY ?? "", guard });
 
 // Capture what the model said before the gateway's code check touches it. Each trial gets its own
@@ -151,7 +152,7 @@ const totals = {
   controlTrials: controls.reduce((n, r) => n + r.runs.length, 0),
   baselineUnhelpful: sum((x) => x.unhelpful.b, controls),
   avalUnhelpful: sum((x) => x.unhelpful.a, controls),
-  spentUsd: guard.spentUsd,
+  spentUsd: guard.spentUsd - startedAtUsd,
 };
 writeFileSync(
   "docs/redteam-results.json",
