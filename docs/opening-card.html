@@ -5,28 +5,30 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Aval opening card</title>
 <style>
-  :root { --bg:#f6f4ef; --ink:#1b1b1b; --muted:#6b675f; --user:#1f5e3b; --agent:#ffffff; --bad:#b3261e; --line:#d9d4c8; }
-  * { box-sizing: border-box; }
-  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:22px/1.4 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+  :root { --bg:#0a110e; --surface:#111b17; --ink:#e9f1ee; --muted:#93a69f; --line:#22322c; --verified:#3fdc9a; --bad:#ff7d72; --user:#e9f1ee; --user-ink:#0a110e;
+    --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; --mono:ui-monospace,"SF Mono",Menlo,monospace; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:22px/1.45 var(--font); -webkit-font-smoothing:antialiased; }
   .stage { position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; padding:4vh 6vw; }
-  .chat { width:min(880px,100%); display:flex; flex-direction:column; gap:22px; }
-  .who { font-size:.62em; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
-  .bubble { padding:20px 26px; border-radius:20px; opacity:0; animation: in .6s ease forwards; }
-  .user { align-self:flex-end; background:var(--user); color:#fff; max-width:80%; animation-delay:.6s; }
-  .user .who { color:#cfe5d7; }
-  .agent { align-self:flex-start; background:var(--agent); border:1px solid var(--line); max-width:92%; animation-delay:3s; }
-  .claim { display:inline; position:relative; font-weight:600; }
-  .claim::after { content:""; position:absolute; left:-2px; right:-2px; top:55%; height:3px; background:var(--bad); transform:scaleX(0); transform-origin:left; animation: strike .7s ease forwards; }
+  .chat { width:min(900px,100%); display:flex; flex-direction:column; gap:22px; }
+  .who { font:600 .55em/1 var(--mono); letter-spacing:.09em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+  .bubble { padding:22px 28px; border-radius:20px; opacity:0; animation:in .6s ease forwards; }
+  .user { align-self:flex-end; background:var(--user); color:var(--user-ink); max-width:80%; animation-delay:.6s; }
+  .user .who { color:#5a6b65; }
+  .agent { align-self:flex-start; background:var(--surface); border:1px solid var(--line); max-width:92%; animation-delay:3s; }
+  .claim { position:relative; font-weight:600; }
+  .claim::after { content:""; position:absolute; left:-2px; right:-2px; top:55%; height:3px; background:var(--bad); transform:scaleX(0); transform-origin:left; animation:strike .7s ease forwards; }
   .c1::after { animation-delay:7s; } .c2::after { animation-delay:9s; } .c3::after { animation-delay:11s; }
-  .note { align-self:center; font-size:1.05em; color:var(--bad); opacity:0; animation: in .6s ease 14s forwards; font-weight:600; }
-  .title { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--bg); opacity:0; animation: in .8s ease 18s forwards; text-align:center; padding:0 6vw; }
-  .title h1 { font-size:3.1em; margin:0 0 .2em; letter-spacing:-.01em; }
-  .title p { margin:.2em 0; font-size:1.25em; color:var(--muted); }
+  .note { align-self:flex-start; font:600 .8em var(--mono); color:var(--bad); opacity:0; animation:in .6s ease 14s forwards; letter-spacing:.02em; }
+  .title { position:absolute; inset:0; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; background:var(--bg); opacity:0; animation:in .8s ease 18s forwards; padding:0 max(8vw,60px); }
+  .title .mark { width:84px; height:84px; color:var(--verified); margin-bottom:28px; }
+  .title h1 { font-size:4.6em; margin:0; letter-spacing:-.03em; line-height:1; }
+  .title p { margin:.5em 0 0; font-size:1.3em; color:var(--muted); }
   .title strong { color:var(--ink); }
-  .cap { position:absolute; bottom:2.5vh; left:0; right:0; text-align:center; font-size:.6em; color:var(--muted); }
-  @keyframes in { from { opacity:0; transform: translateY(8px);} to { opacity:1; transform:none; } }
-  @keyframes strike { to { transform: scaleX(1); } }
-  @media (prefers-reduced-motion: reduce) { * { animation-duration:.01s !important; animation-delay:0s !important; } }
+  .cap { position:absolute; bottom:2.5vh; left:0; right:0; text-align:center; font:500 .55em var(--mono); color:var(--muted); }
+  @keyframes in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  @keyframes strike { to { transform:scaleX(1); } }
+  @media (prefers-reduced-motion:reduce) { * { animation-duration:.01s !important; animation-delay:0s !important; } }
 </style>
 </head>
 <body>
@@ -34,9 +36,10 @@
   <div class="chat">
     <div class="bubble user"><div class="who">Camila</div>Find me a 2-bedroom flat in Ñuñoa where my dog is allowed. I'm buying my first home.</div>
     <div class="bubble agent"><div class="who">Her AI agent</div>I found a great one: <span class="claim c1">bright</span>, <span class="claim c2">quiet</span>, and a <span class="claim c3">great investment</span>. Want me to book a visit?</div>
-    <div class="note">Nobody ever checked any of that.</div>
+    <div class="note">NOBODY EVER CHECKED ANY OF THAT.</div>
   </div>
   <div class="title">
+    <svg class="mark" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V6a3 3 0 0 1 3-3h2M16 3h2a3 3 0 0 1 3 3v2M21 16v2a3 3 0 0 1-3 3h-2M8 21H6a3 3 0 0 1-3-3v-2M8.7 12.4l2.5 2.5 4.3-5"/></svg>
     <h1>Aval</h1>
     <p>The listing AI agents can believe.</p>
     <p><strong>No evidence, no claim.</strong></p>

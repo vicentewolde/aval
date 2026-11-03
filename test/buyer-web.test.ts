@@ -88,7 +88,7 @@ describe("search page", () => {
         `${base}/search?q=${encodeURIComponent("2 dormitorios en Ñuñoa, acepta perro, hasta UF 6000, con tina")}`,
       )
     ).text();
-    expect(html).toContain("I understood");
+    expect(html).toContain("Understood as");
     expect(html).toContain("with bathtub");
     expect(html).toContain("Nunoa");
     expect(html).toContain("/l/demo-1/showroom?c=");
@@ -125,7 +125,7 @@ describe("showroom", () => {
     const r = await fetch(`${base}/l/demo-1/showroom`);
     const html = await r.text();
     expect(r.status).toBe(200);
-    expect(html).toContain('src="/l/demo-1/media/clip.mp4"');
+    expect(html).toContain('src="/l/demo-1/media/clip.mp4#t=0.5"');
     expect(html).toContain("Chapters, each one verified");
     expect(r.headers.get("content-security-policy")).toContain(`'sha256-${SHOWROOM_SCRIPT_HASH}'`);
     const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1] as string;

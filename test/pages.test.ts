@@ -60,7 +60,7 @@ describe("public pages for agents that do not speak MCP", () => {
     const r = await get("/l/demo-1");
     expect(r.status).toBe(200);
     const html = await r.text();
-    expect(html).toContain("verified by video");
+    expect(html).toContain("Verified in video");
     expect(html).toContain("said by the broker");
     const ld = JSON.parse(
       /<script type="application\/ld\+json">(.*?)<\/script>/s.exec(html)?.[1] ?? "{}",

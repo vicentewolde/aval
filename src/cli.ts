@@ -62,6 +62,7 @@ import {
 import { renderReport } from "./report.ts";
 import { SpendGuard } from "./spend.ts";
 import { Store } from "./store.ts";
+import { blue, bold, cyan, dim, green, red, statusColor, yellow } from "./style.ts";
 import { applyClaimEdit, evalCases, styleGuide, styleNotes } from "./taste/edits.ts";
 
 function loadDotEnv(path = ".env"): void {
@@ -468,8 +469,8 @@ async function main(): Promise<void> {
         });
         const out = join(store.listingDir(id), `caption-${cap.channel}-${cap.language}.json`);
         writeFileSync(out, `${JSON.stringify(cap, null, 2)}\n`);
-        console.log(`\n${cap.text}\n`);
-        console.log("Each sentence and the proof it rests on:");
+        console.log(`\n${bold(cap.text)}\n`);
+        console.log(dim("Each sentence and the proof it rests on:"));
         const byId = new Map(l.claims.map((x) => [x.id, x]));
         cap.sentences.forEach((s, i) => {
           const why = s.claim_ids.map((cid) => {
@@ -479,11 +480,12 @@ async function main(): Promise<void> {
               ? `${cid} verified in the video${e?.t_sec != null ? ` at ${e.t_sec}s (${e.frames_detected} frames)` : ""}`
               : `${cid} declared by the broker`;
           });
-          console.log(`  ${i + 1}. ${s.english}\n     <- ${why.join("; ")}`);
+          console.log(`  ${i + 1}. ${s.english}\n     ${green("<-")} ${dim(why.join("; "))}`);
         });
         if (cap.withheld.length > 0) {
-          console.log("\nLeft out, and why:");
-          for (const w of cap.withheld) console.log(`  - ${w.statement}: ${w.reason}`);
+          console.log(`\n${bold("Left out, and why:")}`);
+          for (const w of cap.withheld)
+            console.log(`  ${yellow("-")} ${w.statement}: ${dim(w.reason)}`);
         }
         if (cap.dropped.length > 0) {
           console.log("\nThe writer proposed these and the checker removed them:");
@@ -742,12 +744,18 @@ async function main(): Promise<void> {
       if (sub === "show") {
         const op = svc.operatorState(id);
         if (!op) throw new Error("no such negotiation (or its mandates are no longer valid)");
-        for (const m of op.state.moves)
+        for (const m of op.state.moves) {
+          const who = m.party === "buyer" ? cyan(m.party.padEnd(6)) : blue(m.party.padEnd(6));
+          const what =
+            m.price !== undefined
+              ? bold(`${op.state.currency} ${m.price}`) + `, ${m.closing_days} days`
+              : "";
           console.log(
-            `${String(m.seq).padStart(2)}. ${m.party.padEnd(6)} ${m.type.padEnd(9)} ${m.price !== undefined ? `${op.state.currency} ${m.price}, ${m.closing_days} days` : ""}  "${m.rationale}"${m.flags.length ? `  [flags: ${m.flags.join(",")}]` : ""}`,
+            `${dim(String(m.seq).padStart(2))}. ${who} ${m.type.padEnd(9)} ${what}  ${dim(`"${m.rationale}"`)}${m.flags.length ? `  ${yellow(`[flags: ${m.flags.join(",")}]`)}` : ""}`,
           );
+        }
         console.log(
-          `status: ${op.state.status}${op.state.agreement ? `  agreed ${op.state.currency} ${op.state.agreement.price}, ${op.state.agreement.closing_days} days` : ""}`,
+          `${bold("status:")} ${bold(statusColor(op.state.status)(op.state.status))}${op.state.agreement ? `  ${bold(green(`agreed ${op.state.currency} ${op.state.agreement.price}`))}, ${op.state.agreement.closing_days} days` : ""}`,
         );
         const ts = svc.termSheet(id);
         if (ts) {
@@ -757,7 +765,7 @@ async function main(): Promise<void> {
             PrincipalRegistry.fromFile(join(store.root, "principals.json")),
           );
           console.log(
-            `term sheet: non-binding; approvals buyer=${st.buyer ? "yes" : "pending"} seller=${st.seller ? "yes" : "pending"}${st.complete ? "  -> both principals approved" : ""}`,
+            `${bold("term sheet:")} non-binding; approvals buyer=${st.buyer ? green("yes") : yellow("pending")} seller=${st.seller ? green("yes") : yellow("pending")}${st.complete ? `  ${green("-> both principals approved")}` : ""}`,
           );
         }
         return;
@@ -813,8 +821,8 @@ async function main(): Promise<void> {
         const r = verifyPassport(JSON.parse(readFileSync(a, "utf8")) as Passport);
         console.log(
           r.valid
-            ? "VALID: signature, Merkle root and dates check out (offline)"
-            : `INVALID: ${r.reasons.join("; ")}`,
+            ? green("VALID: signature, Merkle root and dates check out (offline)")
+            : red(`INVALID: ${r.reasons.join("; ")}`),
         );
         process.exitCode = r.valid ? 0 : 1;
       } else if (sub === "prove" && a && b) {
@@ -825,8 +833,8 @@ async function main(): Promise<void> {
         const r = verifyFactProof(JSON.parse(readFileSync(a, "utf8")) as FactProof);
         console.log(
           r.valid
-            ? "VALID: this fact is part of the signed passport"
-            : `INVALID: ${r.reasons.join("; ")}`,
+            ? green("VALID: this fact is part of the signed passport")
+            : red(`INVALID: ${r.reasons.join("; ")}`),
         );
         process.exitCode = r.valid ? 0 : 1;
       } else {
@@ -851,16 +859,20 @@ async function main(): Promise<void> {
           return;
         }
         console.log(
-          `${r.status.toUpperCase()}  (${r.documents.length} documents, review ${r.hash.slice(0, 16)}...)`,
+          `${bold(statusColor(r.status)(r.status.toUpperCase()))}  ${dim(`(${r.documents.length} documents, review ${r.hash.slice(0, 16)}...)`)}`,
         );
         for (const f of r.findings) {
           const tag =
-            f.severity === "blocker" ? "BLOCKER" : f.severity === "warning" ? "warning" : "ok     ";
-          console.log(`  ${tag}  ${f.rule}: ${f.message}`);
+            f.severity === "blocker"
+              ? bold(red("BLOCKER"))
+              : f.severity === "warning"
+                ? yellow("warning")
+                : green("ok     ");
+          console.log(`  ${tag}  ${bold(f.rule)}: ${f.message}`);
           for (const e of f.evidence.slice(0, 2))
-            console.log(`           ${e.doc_type} p.${e.page}: "${e.quote}"`);
+            console.log(dim(`           ${e.doc_type} p.${e.page}: "${e.quote}"`));
         }
-        console.log(`\n${r.disclaimer}`);
+        console.log(`\n${dim(r.disclaimer)}`);
         return;
       }
       if (sub !== "check" || files.length === 0) throw new Error("diligence check <id> <pdfs…>");
@@ -901,7 +913,9 @@ async function main(): Promise<void> {
     case "audit-verify": {
       const v = verifyChain(join(store.root, "audit.jsonl"));
       console.log(
-        v.ok ? `chain intact: ${v.entries} entries` : `CHAIN BROKEN at entry ${v.brokenAt}`,
+        v.ok
+          ? green(`chain intact: ${v.entries} entries`)
+          : red(`CHAIN BROKEN at entry ${v.brokenAt}`),
       );
       process.exitCode = v.ok ? 0 : 1;
       return;

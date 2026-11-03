@@ -1,10 +1,13 @@
 import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { join } from "node:path";
 import type { Listing } from "../claims/schema.ts";
 import { loadPublicReview, reviewAttachments } from "../diligence/review.ts";
 import { type Issuer, issuePassport, publicKeyOf } from "../passport/passport.ts";
 import type { Store } from "../store.ts";
 import { type Caller, PolicyDenied, type VisibleFact, visibleFacts } from "./policy.ts";
+import { esc, icon, proofMeter, provBadge, shell, type Theme, themeFrom } from "./ui.ts";
 
 /**
  * Public pages for agents that do not speak MCP (and for people): a page and a JSON document per
@@ -29,12 +32,6 @@ export const MCP_TOOLS = [
   "negotiation_walk_away",
   "negotiation_status",
 ] as const;
-
-export const esc = (s: string): string =>
-  s.replace(
-    /[&<>"']/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string,
-  );
 
 /** JSON that is safe inside <script>: no "</script>", no HTML comments, no line separators. */
 export function jsonForScript(value: unknown): string {
@@ -138,15 +135,6 @@ export function listingJsonLd(
   };
 }
 
-export const STYLE = `html{color-scheme:light}body{background:#fff;color:#1a1a1a;font:16px/1.5 system-ui,sans-serif;max-width:860px;margin:2rem auto;padding:0 1rem}
-h1{margin-bottom:.2rem}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #ddd;padding:.5rem;text-align:left;vertical-align:top}
-.b{border-radius:99px;color:#fff;font-size:12px;padding:2px 10px;white-space:nowrap}.m{color:#666;font-size:13px}.box{background:#f4f4f4;border-radius:8px;padding:.8rem 1rem;margin:1rem 0}a{color:#0b57d0}`;
-export const COLOR: Record<VisibleFact["provenance"], string> = {
-  visually_verified: "#0a7d4b",
-  broker_stated: "#1565c0",
-  broker_declared: "#555",
-};
-
 export function policyLines(listing: Listing): string[] {
   const p = listing.policy;
   return [
@@ -194,20 +182,49 @@ const REVIEW_TEXT: Record<string, string> = {
   blocked: "reviewed, a blocking problem was found",
   incomplete: "some documents are missing or could not be verified",
 };
+const REVIEW_TONE: Record<string, string> = {
+  clear: "",
+  needs_attention: " fit--maybe",
+  blocked: " fit--bad",
+  incomplete: " fit--maybe",
+};
 
 export function reviewBox(r: ReturnType<typeof loadPublicReview>): string {
   const names = (xs: string[]) =>
     xs.map((x) => esc(x.toLowerCase().replaceAll("_", " "))).join(", ");
   if (!r)
-    return `<div class="box"><b>Sale documents</b><p>Not reviewed: the seller has not provided documents. This is not the same as clear.</p></div>`;
-  return `<div class="box"><b>Sale documents</b><p>${esc(REVIEW_TEXT[r.status] ?? r.status)} (${r.documents} certificates read).${r.blockers.length ? ` Blocking: ${names(r.blockers)}.` : ""}${r.warnings.length ? ` To settle: ${names(r.warnings)}.` : ""} <span class="m">Automated reading, not legal advice. Review ${esc(r.review_hash.slice(0, 12))}…</span></p></div>`;
+    return `<section class="panel"><h2>${icon("doc")} Sale documents</h2><p class="muted" style="margin:0">Not reviewed: the seller has not provided documents. This is not the same as clear.</p></section>`;
+  return `<section class="panel"><div class="res-head"><h2>${icon("doc")} Sale documents</h2><span class="fit${REVIEW_TONE[r.status] ?? " fit--maybe"}">${esc(REVIEW_TEXT[r.status] ?? r.status)}</span></div>
+<p style="margin:.5rem 0 0">${r.documents} certificates read.${r.blockers.length ? ` <b class="err">Blocking:</b> ${names(r.blockers)}.` : ""}${r.warnings.length ? ` <b style="color:var(--maybe)">To settle:</b> ${names(r.warnings)}.` : ""}</p>
+<p class="small muted" style="margin:.4rem 0 0">Automated reading, not legal advice. Review <span class="mono">${esc(r.review_hash.slice(0, 12))}…</span></p></section>`;
 }
+
+/** A verified evidence frame to use as the cover, only when the seller publishes its media. */
+export function coverFor(listing: Listing, store: Store): string | null {
+  if (listing.policy.publicMedia !== true) return null;
+  const best = listing.claims
+    .filter(
+      (c) =>
+        c.provenance === "visually_verified" &&
+        c.evidence?.image &&
+        /^evidence\/[A-Za-z0-9_-]+\.(jpg|png)$/.test(c.evidence.image),
+    )
+    .sort((a, b) => (b.evidence?.frames_detected ?? 0) - (a.evidence?.frames_detected ?? 0))[0];
+  const image = best?.evidence?.image;
+  return image && existsSync(join(store.listingDir(listing.id), image))
+    ? `/l/${listing.id}/${image}`
+    : null;
+}
+
+const countOf = (facts: VisibleFact[], p: VisibleFact["provenance"]): number =>
+  facts.filter((f) => f.provenance === p).length;
 
 export function renderListingPage(
   listing: Listing,
   facts: VisibleFact[],
   baseUrl: string,
   review: ReturnType<typeof loadPublicReview> = null,
+  ctx: { url?: URL; theme?: Theme | null } = {},
 ): { html: string; scriptHash: string } {
   const url = `${baseUrl}/l/${listing.id}`;
   const script = webMcpScript(listing, facts);
@@ -217,46 +234,77 @@ export function renderListingPage(
     broker_stated: 1,
     broker_declared: 2,
   };
+  const v = countOf(facts, "visually_verified");
+  const st = countOf(facts, "broker_stated");
+  const d = countOf(facts, "broker_declared");
   const rows = [...facts]
     .sort((a, b) => rank[a.provenance] - rank[b.provenance])
     .map(
       (f) =>
-        `<tr><td>${esc(f.statement)}</td><td><span class="b" style="background:${COLOR[f.provenance]}">${BADGE[f.provenance]}</span></td><td class="m">${esc(f.evidence)}</td></tr>`,
+        `<li><span>${esc(f.statement)}</span><span>${provBadge(f.provenance)}</span><span class="q">${esc(f.evidence)}</span></li>`,
     )
     .join("");
-  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(listing.declared.title)} · Aval</title>
-<meta name="description" content="Verified facts about this listing, each with its source.">
-<link rel="alternate" type="application/json" href="/l/${esc(listing.id)}.json"><link rel="canonical" href="${esc(url)}">
-<style>${STYLE}</style>
-<script type="application/ld+json">${jsonForScript(listingJsonLd(listing, facts, url))}</script></head><body>
-<p class="m"><a href="/listings">All listings</a> · <a href="/l/${esc(listing.id)}/showroom">Open the showroom</a> · <a href="/search">Search</a></p>
-<h1>${esc(listing.declared.title)}</h1>
-<p class="m">${esc(listing.declared.commune)} · ${listing.declared.operation === "sale" ? "for sale" : "for rent"} · <code>${esc(listing.id)}</code></p>
-<div class="box"><b>What the seller's rules mean for you</b><ul>${policyLines(listing)
+  const body = `<main class="wrap">
+<div class="titlebar"><div><div class="crumbs"><a href="/listings">Listings</a> / Facts</div>
+<h1 style="font-size:clamp(1.7rem,3.6vw,2.4rem)">${esc(listing.declared.title)}</h1>
+<div class="chips" style="margin-top:.8rem"><span class="chip chip--soft">${esc(listing.declared.commune)}</span><span class="chip chip--soft">${listing.declared.operation === "sale" ? "For sale" : "For rent"}</span><span class="chip chip--soft mono">${esc(listing.id)}</span></div></div>
+<div><div style="min-width:240px">${proofMeter(v, st, d)}</div><div class="legend" style="margin-top:.5rem"><span><b style="color:var(--verified)">${v}</b>verified in video</span><span><b>${st}</b>said</span><span><b>${d}</b>declared</span></div>
+<p style="margin:.9rem 0 0"><a class="btn btn--sm" href="/l/${esc(listing.id)}/showroom">Open the showroom ${icon("arrow")}</a></p></div></div>
+<div class="cols"><section class="panel"><h2>Every fact, with where it comes from</h2><ul class="said" style="margin-top:.5rem">${rows}</ul></section>
+<div class="stack"><section class="panel"><h2>What the seller's rules mean for you</h2><ul class="mapped small">${policyLines(
+    listing,
+  )
     .map((l) => `<li>${esc(l)}</li>`)
-    .join("")}</ul></div>
+    .join("")}</ul></section>
 ${reviewBox(review)}
-<table><tr><th>Fact</th><th>Source</th><th>Evidence</th></tr>${rows}</table>
-<div class="box"><b>For AI agents</b><p>This page is the public, read-only view. For questions, search across listings, and visit requests, connect to the MCP endpoint <code>${esc(baseUrl)}/mcp</code> (tools: ${MCP_TOOLS.join(", ")}). Identified agents sign their requests; see <a href="/.well-known/aval.json">/.well-known/aval.json</a>. Machine-readable facts: <a href="/l/${esc(listing.id)}.json">/l/${esc(listing.id)}.json</a>. Signed, offline-verifiable record: <a href="/l/${esc(listing.id)}/passport.json">passport.json</a>.</p></div>
-<script>${script}</script></body></html>`;
+<section class="panel"><h2>For AI agents</h2><p class="small muted" style="margin:0 0 .6rem">This is the public, read-only view. Agents that identify themselves can ask questions, search across sellers, request visits and negotiate.</p>
+<p class="mono" style="word-break:break-all;margin:.2rem 0 .6rem">${esc(baseUrl)}/mcp</p><div class="chips">${MCP_TOOLS.map((t) => `<span class="chip chip--soft mono">${esc(t)}</span>`).join("")}</div>
+<p class="small muted" style="margin:.8rem 0 0">Requests are signed: see <a href="/.well-known/aval.json">/.well-known/aval.json</a>. Facts as JSON: <a href="/l/${esc(listing.id)}.json">${esc(listing.id)}.json</a>. Signed, offline-verifiable record: <a href="/l/${esc(listing.id)}/passport.json">passport.json</a>.</p></section></div></div>
+</main>`;
+  const html = shell({
+    title: `${listing.declared.title} · Aval`,
+    description: "Verified facts about this listing, each with its source.",
+    body,
+    active: "listings",
+    theme: ctx.theme ?? null,
+    ...(ctx.url ? { url: ctx.url } : {}),
+    head: `<link rel="alternate" type="application/json" href="/l/${esc(listing.id)}.json"><link rel="canonical" href="${esc(url)}"><script type="application/ld+json">${jsonForScript(listingJsonLd(listing, facts, url))}</script>`,
+    script,
+  });
   return { html, scriptHash };
 }
 
-export function renderIndex(listings: Listing[], baseUrl: string): string {
-  const items = listings
+export function renderIndex(
+  listings: Listing[],
+  _baseUrl: string,
+  store?: Store,
+  ctx: { url?: URL; theme?: Theme | null } = {},
+): string {
+  const cards = listings
     .map((l) => ({ l, facts: publicFacts(l) }))
     .filter((x): x is { l: Listing; facts: VisibleFact[] } => x.facts !== null)
-    .map(
-      ({ l, facts }) =>
-        `<li><a href="/l/${esc(l.id)}">${esc(l.declared.title)}</a> <span class="m">${esc(l.declared.commune)} · ${l.declared.operation} · ${facts.length} facts · <a href="/l/${esc(l.id)}/showroom">showroom</a></span></li>`,
-    )
+    .map(({ l, facts }) => {
+      const cover = store ? coverFor(l, store) : null;
+      return `<article class="card lc"><a class="thumb" href="/l/${esc(l.id)}/showroom" tabindex="-1" aria-hidden="true">${cover ? `<img loading="lazy" alt="" src="${esc(cover)}">` : `<span class="ph">${icon("video")}No walkthrough published</span>`}</a>
+<div class="lc-body"><div class="muted small">${esc(l.declared.commune)} · ${l.declared.operation === "sale" ? "for sale" : "for rent"}</div><h2><a href="/l/${esc(l.id)}/showroom">${esc(l.declared.title)}</a></h2>
+${proofMeter(countOf(facts, "visually_verified"), countOf(facts, "broker_stated"), countOf(facts, "broker_declared"))}
+<div class="muted small"><b style="color:var(--verified)">${countOf(facts, "visually_verified")}</b> verified · ${countOf(facts, "broker_stated")} said · ${countOf(facts, "broker_declared")} declared</div>
+<div class="res-foot"><a class="btn btn--sm" href="/l/${esc(l.id)}/showroom">Showroom</a><a class="btn btn--sm btn--ghost" href="/l/${esc(l.id)}">Facts</a></div></div></article>`;
+    })
     .join("");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Aval · listings agents can believe</title>
-<link rel="alternate" type="application/json" href="/listings.json"><style>${STYLE}</style></head><body>
-<h1>Aval</h1><p>Listings whose facts carry their proof. Only what is verified, said by the broker, or declared is shown, and each fact says which.</p>
-<p><a href="/search"><b>Find a home →</b></a> <span class="m">describe what you want, in Spanish or English</span></p>
-<ul>${items}</ul><p class="m">Agents: <a href="/.well-known/aval.json">discovery</a> · <a href="/listings.json">listings.json</a> · MCP at <code>${esc(baseUrl)}/mcp</code></p></body></html>`;
+  const body = `<main class="wrap"><section class="hero"><div class="eyebrow">Registry</div><h1>Listings with their proof.</h1>
+<p class="lead">Only what is verified, said by the broker, or declared is shown, and each fact says which.</p>
+<p style="margin-top:1.2rem"><a class="btn" href="/search">${icon("search")} Find a home</a></p></section>
+<div class="cards">${cards}</div></main>`;
+  return shell({
+    title: "Listings · Aval",
+    description: "Listings whose facts carry their proof.",
+    body,
+    active: "listings",
+    theme: ctx.theme ?? null,
+    ...(ctx.url ? { url: ctx.url } : {}),
+    head: `<link rel="alternate" type="application/json" href="/listings.json">`,
+  });
 }
 
 export function listingsJson(listings: Listing[], baseUrl: string): unknown {
@@ -363,11 +411,20 @@ export function handlePublicRequest(
   const path = (req.url ?? "/").split("?")[0] ?? "/";
   const base = safeBase(req);
   const CSP_PLAIN =
-    "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+    "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+  const pageUrl = new URL(req.url ?? "/", "http://localhost");
+  const theme = themeFrom(pageUrl);
   if (path === "/" || path === "/listings") {
-    send(req, res, 200, "text/html", renderIndex(store.listListings(), base), {
-      "content-security-policy": CSP_PLAIN,
-    });
+    send(
+      req,
+      res,
+      200,
+      "text/html",
+      renderIndex(store.listListings(), base, store, { url: pageUrl, theme }),
+      {
+        "content-security-policy": CSP_PLAIN,
+      },
+    );
     return true;
   }
   if (path === "/listings.json") {
@@ -436,6 +493,7 @@ export function handlePublicRequest(
     facts,
     base,
     loadPublicReview(store.listingDir(listing.id)),
+    { url: pageUrl, theme },
   );
   send(req, res, 200, "text/html", html, {
     "content-security-policy": `${CSP_PLAIN}; script-src 'sha256-${scriptHash}'`,

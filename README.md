@@ -18,6 +18,23 @@ Muse Spark + SAM 3.1 + Muse Voice Transcribe).
 > mandates, a title-document review with page-level evidence, a buyer search and showroom with consented lead capture, verified-only copy for Instagram and the portals, and two red-teams. **Not built (roadmap):** a hosted marketplace,
 > buyer matching at scale, land for developers.
 
+## Screens
+
+| Search in your own words | Showroom: a box where SAM 3.1 found each verified fact |
+|---|---|
+| ![Search](docs/images/search-light.png) | ![Showroom](docs/images/showroom-dark.png) |
+
+| Registry | Evidence report |
+|---|---|
+| ![Listings](docs/images/listings-dark.png) | ![Report](docs/images/report-light.png) |
+
+The pages share one small design system (`src/gateway/ui.ts`): green is reserved for "verified" and never used as
+decoration, the other provenances and the unconfirmed state have fixed colors, light and dark themes follow the OS
+(`?theme=dark` or `?theme=light` pins one), system fonts only, and nothing is loaded from another host, so the pages
+look the same offline. A link like `/l/demo-1/showroom?t=41.2` opens the walkthrough at a verified moment with its box.
+The visual references were looked at on 21st.dev (a React component library); no component code from it is in this
+repository, everything is written here for the hackathon.
+
 ## The rule
 
 **No evidence, no claim.** Every statement has a provenance:

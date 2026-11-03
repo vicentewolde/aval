@@ -37,3 +37,10 @@ commercial due diligence. None found that serves a verified registry to buyers' 
 The opening of the video is now a person (Camila, invented and labelled as such) instead of a
 question about agents, and the closing line returns to her. Nothing in the product changed. No statistic
 about fraud in Chilean listings is used, because none was sourced.
+
+## Design
+
+The interface was reviewed against what recent winners show (a person first, proof on screen) and against the
+visual language of component libraries such as 21st.dev, used only as a visual reference. The pages draw the
+proof itself: a box on the video where SAM 3.1 found each fact, a timeline with a mark per verified moment, a bar
+that shows how much of a listing is verified, said or merely declared. No code from any library was copied.

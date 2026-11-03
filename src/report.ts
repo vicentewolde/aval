@@ -1,31 +1,56 @@
 import type { Claim, Listing } from "./claims/schema.ts";
 import { visibleFacts } from "./gateway/policy.ts";
+import { CSS, esc, icon, MARK, type Provenance, provBadge } from "./gateway/ui.ts";
 
-const esc = (s: string): string =>
-  s.replace(
-    /[&<>"]/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] as string,
-  );
+const REPORT_CSS = `
+.rep-top{border-bottom:1px solid var(--line)}
+.rep-top .wrap{display:flex;align-items:center;gap:.7rem;height:56px}
+.rep-top .brand{font-size:1.05rem}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.8rem;margin:1.6rem 0 .4rem}
+.kpi{padding:.9rem 1rem}.kpi b{display:block;font-size:2rem;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-bottom:.35rem}
+.kpi span{font-size:.85rem;color:var(--muted)}
+.kpi--v b{color:var(--verified)}.kpi--s b{color:var(--said)}.kpi--h b{color:var(--maybe)}.kpi--n b{color:var(--bad)}
+.proofgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:1rem;margin-top:1rem}
+.fig{margin:0;overflow:hidden}
+.fig .im{aspect-ratio:9/16;background:#050806;display:block}
+.fig .im img{width:100%;height:100%;object-fit:contain;display:block}
+.fig figcaption{padding:.75rem .85rem .9rem;display:grid;gap:.3rem}
+.fig b{font-weight:600;font-size:.93rem;line-height:1.3}
+.sec{margin-top:2.6rem}.sec>p{margin:.4rem 0 0}
+.held{display:grid;gap:.6rem;margin-top:1rem}
+.held article{padding:.8rem 1rem;display:grid;gap:.35rem}
+.badge--held{--c:var(--maybe)}.badge--never{--c:var(--bad)}
+.told{list-style:none;margin:1rem 0 0;padding:0;display:grid;gap:0}
+.told li{display:grid;gap:.2rem;padding:.7rem 0;border-top:1px solid var(--line)}
+.told li:first-child{border-top:0}
+`;
 
-const BADGE: Record<Claim["provenance"], [string, string]> = {
-  visually_verified: ["#0a7d4b", "verified by video"],
-  broker_stated: ["#1565c0", "said by broker (voice note)"],
-  broker_declared: ["#555", "declared by broker"],
-  unverified: ["#b26a00", "held back: no evidence"],
-  subjective: ["#8a3ffc", "never stated"],
+const HELD: Record<string, { label: string; cls: string; ic: string }> = {
+  unverified: { label: "Held back: no evidence", cls: "held", ic: "question" },
+  subjective: { label: "Never stated: a taste word", cls: "never", ic: "x" },
 };
 
-function row(c: Claim): string {
-  const [color, label] = BADGE[c.provenance];
+const badge = (c: Claim): string => {
+  if (c.provenance === "unverified" || c.provenance === "subjective") {
+    const h = HELD[c.provenance] as { label: string; cls: string; ic: string };
+    return `<span class="badge badge--${h.cls}">${icon(h.ic)}${h.label}</span>`;
+  }
+  return provBadge(c.provenance as Provenance);
+};
+
+function figure(c: Claim): string {
+  if (c.evidence?.kind !== "visual" || !c.evidence.image) return "";
+  return `<figure class="card fig"><a class="im" href="${esc(c.evidence.image)}"><img loading="lazy" src="${esc(c.evidence.image)}" alt="evidence for ${esc(c.id)}"></a><figcaption><b>${esc(c.statement)}</b><span class="mono muted">${esc(c.evidence.concept ?? "")} · ${c.evidence.frames_detected} frames · conf ${c.evidence.confidence?.toFixed(2) ?? "n/a"}</span></figcaption></figure>`;
+}
+
+function heldCard(c: Claim): string {
   const ev =
-    c.evidence?.kind === "visual"
-      ? `${c.evidence.image ? `<a href="${esc(c.evidence.image)}"><img src="${esc(c.evidence.image)}" alt="evidence for ${esc(c.id)}"></a>` : ""}<div class="m">${esc(c.evidence.concept ?? "")} · ${c.evidence.frames_detected} frames · t=${c.evidence.t_sec?.toFixed(1)}s · conf ${c.evidence.confidence ?? "n/a"}</div>`
-      : c.evidence?.kind === "voice"
-        ? `<div class="m">"${esc(c.evidence.quote ?? "")}" · around ${c.evidence.t_sec?.toFixed(0)}s of the note</div>`
-        : c.note
-          ? `<div class="m">${esc(c.note)}</div>`
-          : "";
-  return `<tr><td><code>${esc(c.id)}</code></td><td>${esc(c.statement)}</td><td><span class="b" style="background:${color}">${label}</span></td><td>${ev}</td></tr>`;
+    c.evidence?.kind === "voice"
+      ? `<span class="small muted">"${esc(c.evidence.quote ?? "")}" · around ${c.evidence.t_sec?.toFixed(0)}s of the note</span>`
+      : c.note
+        ? `<span class="small muted">${esc(c.note)}</span>`
+        : "";
+  return `<article class="card"><div class="res-head"><b>${esc(c.statement)}</b>${badge(c)}</div>${ev}<span class="mono muted">${esc(c.id)}</span></article>`;
 }
 
 const ORDER: Record<Claim["provenance"], number> = {
@@ -35,11 +60,6 @@ const ORDER: Record<Claim["provenance"], number> = {
   subjective: 3,
   broker_declared: 4,
 };
-
-function card(c: Claim): string {
-  if (c.evidence?.kind !== "visual" || !c.evidence.image) return "";
-  return `<figure><a href="${esc(c.evidence.image)}"><img src="${esc(c.evidence.image)}" alt="evidence for ${esc(c.id)}"></a><figcaption><b>${esc(c.statement)}</b><span>${esc(c.evidence.concept ?? "")} · ${c.evidence.frames_detected} frames · conf ${c.evidence.confidence?.toFixed(2) ?? "n/a"}</span></figcaption></figure>`;
-}
 
 /** A single static page: every claim, its proof, and exactly what a buyer's agent would be told. */
 export function renderReport(listing: Listing): string {
@@ -52,23 +72,25 @@ export function renderReport(listing: Listing): string {
   };
   for (const c of listing.claims) counts[c.provenance]++;
   const agent = visibleFacts(listing, { agentId: null, tier: "anonymous" });
-  return `<!doctype html><meta charset="utf-8"><title>Aval evidence report: ${esc(listing.id)}</title>
-<style>html{color-scheme:light}body{background:#fff;font:15px/1.45 system-ui,sans-serif;max-width:1180px;margin:2rem auto;padding:0 1rem;color:#1a1a1a}
-table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #ddd;padding:.5rem;vertical-align:top;text-align:left}
-img{max-width:280px;border-radius:6px;display:block}.b{color:#fff;border-radius:99px;padding:2px 10px;font-size:12px;white-space:nowrap}
-.m{color:#666;font-size:12px;margin-top:4px}.k{display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0}.k div{background:#f4f4f4;border-radius:8px;padding:.6rem 1rem}
-.k b{font-size:1.5rem;display:block}.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}figure{margin:0}figure img{width:100%;aspect-ratio:9/16;object-fit:contain;background:#111;max-width:100%}figcaption{font-size:12px;margin-top:6px}figcaption span{display:block;color:#666}h2{margin-top:2rem}</style>
-<h1>${esc(listing.declared.title)}</h1><p>${esc(listing.declared.commune)} · ${listing.declared.operation} · listing <code>${esc(listing.id)}</code></p>
-<div class="k"><div><b>${counts.visually_verified}</b>verified by video</div><div><b>${counts.broker_stated}</b>said in voice note</div><div><b>${counts.broker_declared}</b>declared by broker</div><div><b>${counts.unverified}</b>held back</div><div><b>${counts.subjective}</b>never stated</div></div>
-<h2>The proof: what the video shows (each box is what SAM 3.1 found)</h2>
-<div class="g">${listing.claims.map(card).join("")}</div>
-<h2>Every claim, held back first (broker view)</h2>
-<table><tr><th>id</th><th>statement</th><th>status</th><th>evidence</th></tr>${[...listing.claims]
+  const kpi = (n: number, label: string, cls: string) =>
+    `<div class="card kpi kpi--${cls}"><b>${n}</b><span>${label}</span></div>`;
+  const others = [...listing.claims]
     .sort((a, b) => ORDER[a.provenance] - ORDER[b.provenance])
-    .filter((c) => c.provenance !== "visually_verified")
-    .map(row)
-    .join("")}</table>
-<h2>What a buyer's agent is told (policy applied)</h2>
-<ul>${agent.map((f) => `<li>${esc(f.statement)} <span class="m">— ${esc(f.evidence)}</span></li>`).join("")}</ul>
-<p class="m">Exact address ${listing.policy.showExactAddress ? "shared" : "withheld"} · price ${listing.policy.priceVisibility}${listing.policy.priceVisibility === "range" ? ` (±${Math.round(listing.policy.priceRangePct * 100)}%)` : ""} · anonymous agents ${listing.policy.allowAnonymousAgents ? "read-only" : "not served"}.</p>`;
+    .filter((c) => c.provenance !== "visually_verified");
+  const p = listing.policy;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aval evidence report: ${esc(listing.id)}</title><style>${CSS}${REPORT_CSS}</style></head><body>
+<header class="rep-top"><div class="wrap"><span class="brand">${MARK}Aval</span><span class="muted small">Evidence report</span></div></header>
+<main class="wrap">
+<section class="hero" style="padding-bottom:.4rem"><div class="eyebrow">Evidence report</div><h1 style="font-size:clamp(1.8rem,4vw,2.6rem)">${esc(listing.declared.title)}</h1>
+<div class="chips" style="margin-top:.9rem"><span class="chip chip--soft">${esc(listing.declared.commune)}</span><span class="chip chip--soft">${listing.declared.operation}</span><span class="chip chip--soft mono">listing ${esc(listing.id)}</span></div>
+<div class="kpis">${kpi(counts.visually_verified, "verified by video", "v")}${kpi(counts.broker_stated, "said in voice note", "s")}${kpi(counts.broker_declared, "declared by broker", "d")}${kpi(counts.unverified, "held back", "h")}${kpi(counts.subjective, "never stated", "n")}</div></section>
+<section class="sec"><h2>The proof: what the video shows</h2><p class="muted">Each box is what SAM 3.1 found. A claim without a box is not told to anyone.</p>
+<div class="proofgrid">${listing.claims.map(figure).join("")}</div></section>
+<section class="sec"><h2>Every claim that is not proven by video, held back first</h2><p class="muted">Broker view.</p>
+<div class="held">${others.map(heldCard).join("")}</div></section>
+<section class="sec"><h2>What a buyer's agent is told</h2><p class="muted">Policy applied: this is the only thing an unidentified agent can learn.</p>
+<ul class="told">${agent.map((f) => `<li><span>${esc(f.statement)}</span><span class="small muted">${esc(f.evidence)}</span></li>`).join("")}</ul>
+<p class="small muted">Exact address ${p.showExactAddress ? "shared" : "withheld"} · price ${p.priceVisibility}${p.priceVisibility === "range" ? ` (±${Math.round(p.priceRangePct * 100)}%)` : ""} · anonymous agents ${p.allowAnonymousAgents ? "read-only" : "not served"}.</p></section>
+</main><footer class="foot"><div class="wrap"><span><b>No evidence, no claim.</b> Every fact here says where it comes from.</span></div></footer></body></html>`;
 }
