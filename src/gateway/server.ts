@@ -4,8 +4,10 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { z } from "zod";
 import type { Issuer } from "../passport/passport.ts";
 import type { Store } from "../store.ts";
+import { createBuyerWeb } from "./buyer-web.ts";
 import type { GatewayCore, Outcome } from "./core.ts";
 import type { AgentRegistry } from "./identity.ts";
+import type { IntentParser } from "./intent.ts";
 import { handlePublicRequest } from "./pages.ts";
 import type { Caller } from "./policy.ts";
 import { CriteriaSchema } from "./search.ts";
@@ -223,9 +225,12 @@ export function startGateway(
   host = "127.0.0.1",
   store?: Store,
   issuer?: Issuer,
+  intent?: IntentParser,
 ): Promise<Server> {
+  const buyerWeb = store ? createBuyerWeb({ store, core, ...(intent ? { intent } : {}) }) : null;
   const http = createServer(async (req, res) => {
     if (store && handlePublicRequest(req, res, store, issuer)) return;
+    if (buyerWeb && (await buyerWeb(req, res))) return;
     if (req.url === "/healthz") {
       res.writeHead(200, { "content-type": "text/plain" }).end("ok");
       return;

@@ -22,6 +22,8 @@ import { MuseAnswerModel } from "./gateway/answer-model.ts";
 import { AuditLog, verifyChain } from "./gateway/audit.ts";
 import { GatewayCore, type VisitRecord } from "./gateway/core.ts";
 import { type AgentRecord, AgentRegistry } from "./gateway/identity.ts";
+import { MuseIntentParser, RuleIntentParser } from "./gateway/intent.ts";
+import type { LeadRecord } from "./gateway/leads.ts";
 import { OfflineAnswerModel } from "./gateway/offline-model.ts";
 import { CriteriaSchema } from "./gateway/search.ts";
 import { startGateway } from "./gateway/server.ts";
@@ -79,6 +81,7 @@ const USAGE = `aval <command>
   serve [--port 8787] [--offline]          MCP gateway for buyer agents
   agent-keygen <id> <name> <operator>      create a signing key and register the agent
   visits [approve|decline <visit-id>]      visit requests from agents (a human decides)
+  leads [--id <listing>]|delete <lead-id>  buyers who asked to be contacted from the showroom, with how well the home fits what they searched
   edit <listing> <claim> "<new wording>"   broker correction (feeds the taste module)
   taste                                    what the corrections taught, and eval cases
   buyer "<goal>" [--as <agent-id>|--anonymous] [--url <mcp-url>]   a Muse Spark buyer agent using the gateway
@@ -322,7 +325,9 @@ async function main(): Promise<void> {
         existsSync(issuerKey)
           ? { id: "aval-issuer", privateKeyPem: readFileSync(issuerKey, "utf8") }
           : undefined,
+        values.offline ? new RuleIntentParser() : new MuseIntentParser(client(guard)),
       );
+      console.log(`Buyer pages: http://127.0.0.1:${port}/search (search) and /l/<id>/showroom`);
       console.log(
         `Aval gateway on http://127.0.0.1:${port}/mcp (${values.offline ? "offline model, no spend" : "Muse Spark"})`,
       );
@@ -371,6 +376,39 @@ async function main(): Promise<void> {
         console.log(
           `${v.id}  ${v.status.padEnd(8)}  ${v.listing_id}  ${v.slot}  agent=${v.agent}  ${v.note}`,
         );
+      return;
+    }
+    case "leads": {
+      const [sub, leadId] = positionals;
+      const all = store.readJsonl<LeadRecord>("leads.jsonl");
+      if (sub === "delete") {
+        if (!leadId || !all.some((l) => l.id === leadId)) throw new Error("leads delete <lead-id>");
+        const path = join(store.root, "leads.jsonl");
+        writeFileSync(
+          path,
+          all
+            .filter((l) => l.id !== leadId)
+            .map((l) => `${JSON.stringify(l)}\n`)
+            .join(""),
+        );
+        console.log(`deleted ${leadId} (the buyer's details are gone)`);
+        return;
+      }
+      const rows = all.filter((l) => !values.id || l.listing_id === values.id);
+      if (rows.length === 0) console.log("no leads yet");
+      const clean = (x: string) => x.replace(/[\u0000-\u001f\u007f-\u009f]/g, " ");
+      for (const l of rows.reverse()) {
+        const fit =
+          l.fit.status === "no_criteria"
+            ? "no search attached"
+            : l.fit.status === "not_a_fit"
+              ? `NOT A FIT (${l.fit.not_met.join("; ")})`
+              : `${l.fit.status === "all_met" ? "fits" : "fits so far"}: ${l.fit.met.length} met${l.fit.unconfirmed.length ? `, to confirm: ${l.fit.unconfirmed.join(", ")}` : ""}${l.fit.not_met.length ? `, not met: ${l.fit.not_met.join(", ")}` : ""}`;
+        console.log(
+          `${l.id}  ${l.at.slice(0, 16)}  ${l.listing_id}  ${clean(l.name)}  <${clean(l.contact)}>${l.slot ? `  visit: ${l.slot}` : ""}`,
+        );
+        console.log(`    ${fit}${l.message ? `\n    "${clean(l.message)}"` : ""}`);
+      }
       return;
     }
     case "edit": {

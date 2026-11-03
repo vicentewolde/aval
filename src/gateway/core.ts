@@ -8,6 +8,7 @@ import type { Store } from "../store.ts";
 import type { AnswerModel, AnswerResult } from "./answer.ts";
 import { answerQuestion } from "./answer.ts";
 import type { AuditLog } from "./audit.ts";
+import { LeadInputSchema, type LeadRecord, leadFit } from "./leads.ts";
 import {
   assertMayRead,
   assertMayRequestVisit,
@@ -43,6 +44,7 @@ interface Deps {
 }
 
 const HOUR = 3_600_000;
+export const LEADS_PER_HOUR = 60;
 export const SEARCHES_PER_HOUR = 120;
 
 /** Notes come from outside and end up in a terminal and a log: no control characters, no escape codes. */
@@ -61,6 +63,7 @@ export class GatewayCore {
   private readonly deps: Deps;
   private readonly asks = new Map<string, number[]>();
   private readonly searches = new Map<string, number[]>();
+  private readonly leads = new Map<string, number[]>();
 
   constructor(deps: Deps) {
     this.deps = deps;
@@ -244,6 +247,51 @@ export class GatewayCore {
           },
         };
       return { value: publicSummary(review) };
+    });
+  }
+
+  /**
+   * A buyer asks the broker to get in touch from the showroom. Only with explicit consent; the personal
+   * data goes to the seller's lead file and never into the audit log (which records the lead id only).
+   * The record carries how well the home fits what the buyer searched for, computed from public facts.
+   */
+  captureLead(caller: Caller, listingId: string, raw: unknown) {
+    return this.guarded(caller, "capture_lead", listingId, async () => {
+      const listing = this.require(listingId, caller);
+      this.rateLimit(caller, LEADS_PER_HOUR, this.leads);
+      const parsed = LeadInputSchema.safeParse(raw);
+      if (!parsed.success)
+        throw new PolicyDenied(
+          "INVALID_LEAD",
+          parsed.error.issues.some((i) => i.path[0] === "consent")
+            ? "The buyer must agree to be contacted."
+            : `Check the form: ${parsed.error.issues.map((i) => i.path.join(".") || "form").join(", ")}.`,
+        );
+      const input = parsed.data;
+      const contact = cleanNote(input.contact);
+      const existing = this.deps.store
+        .readJsonl<LeadRecord>("leads.jsonl")
+        .find(
+          (l) =>
+            l.listing_id === listingId &&
+            l.contact.toLowerCase() === contact.toLowerCase() &&
+            this.now().getTime() - Date.parse(l.at) < 24 * HOUR,
+        );
+      if (existing) return { value: { lead_id: existing.id, duplicate: true, fit: existing.fit } };
+      const slot = input.slot && listing.policy.visitSlots.includes(input.slot) ? input.slot : null;
+      const rec: LeadRecord = {
+        id: `lead-${randomUUID().slice(0, 8)}`,
+        listing_id: listingId,
+        at: this.now().toISOString(),
+        name: cleanNote(input.name).slice(0, 80),
+        contact,
+        message: cleanNote(input.message ?? "").slice(0, 500),
+        slot,
+        fit: leadFit(listing, caller, input.criteria),
+        source: "showroom",
+      };
+      this.deps.store.appendJsonl("leads.jsonl", rec);
+      return { value: { lead_id: rec.id, duplicate: false, fit: rec.fit } };
     });
   }
 

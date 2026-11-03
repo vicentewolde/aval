@@ -30,7 +30,7 @@ export const MCP_TOOLS = [
   "negotiation_status",
 ] as const;
 
-const esc = (s: string): string =>
+export const esc = (s: string): string =>
   s.replace(
     /[&<>"']/g,
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string,
@@ -55,7 +55,7 @@ export function publicFacts(listing: Listing): VisibleFact[] | null {
   }
 }
 
-const BADGE: Record<VisibleFact["provenance"], string> = {
+export const BADGE: Record<VisibleFact["provenance"], string> = {
   visually_verified: "verified by video",
   broker_stated: "said by the broker",
   broker_declared: "declared by the broker",
@@ -138,16 +138,16 @@ export function listingJsonLd(
   };
 }
 
-const STYLE = `html{color-scheme:light}body{background:#fff;color:#1a1a1a;font:16px/1.5 system-ui,sans-serif;max-width:860px;margin:2rem auto;padding:0 1rem}
+export const STYLE = `html{color-scheme:light}body{background:#fff;color:#1a1a1a;font:16px/1.5 system-ui,sans-serif;max-width:860px;margin:2rem auto;padding:0 1rem}
 h1{margin-bottom:.2rem}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #ddd;padding:.5rem;text-align:left;vertical-align:top}
 .b{border-radius:99px;color:#fff;font-size:12px;padding:2px 10px;white-space:nowrap}.m{color:#666;font-size:13px}.box{background:#f4f4f4;border-radius:8px;padding:.8rem 1rem;margin:1rem 0}a{color:#0b57d0}`;
-const COLOR: Record<VisibleFact["provenance"], string> = {
+export const COLOR: Record<VisibleFact["provenance"], string> = {
   visually_verified: "#0a7d4b",
   broker_stated: "#1565c0",
   broker_declared: "#555",
 };
 
-function policyLines(listing: Listing): string[] {
+export function policyLines(listing: Listing): string[] {
   const p = listing.policy;
   return [
     p.showExactAddress
@@ -195,7 +195,7 @@ const REVIEW_TEXT: Record<string, string> = {
   incomplete: "some documents are missing or could not be verified",
 };
 
-function reviewBox(r: ReturnType<typeof loadPublicReview>): string {
+export function reviewBox(r: ReturnType<typeof loadPublicReview>): string {
   const names = (xs: string[]) =>
     xs.map((x) => esc(x.toLowerCase().replaceAll("_", " "))).join(", ");
   if (!r)
@@ -324,14 +324,14 @@ export function discoveryDocument(baseUrl: string, issuer?: Issuer): unknown {
   };
 }
 
-function safeBase(req: IncomingMessage): string {
+export function safeBase(req: IncomingMessage): string {
   const fromEnv = process.env.AVAL_PUBLIC_URL;
   if (fromEnv && /^https?:\/\/[A-Za-z0-9.-]+(:\d+)?$/.test(fromEnv)) return fromEnv;
   const host = req.headers.host ?? "";
   return /^[A-Za-z0-9.-]+(:\d+)?$/.test(host) ? `http://${host}` : "http://localhost";
 }
 
-function send(
+export function send(
   req: IncomingMessage,
   res: ServerResponse,
   status: number,
@@ -349,7 +349,7 @@ function send(
   res.end(req.method === "HEAD" ? undefined : body);
 }
 
-const NOT_FOUND = "Not found";
+export const NOT_FOUND = "Not found";
 
 /** Returns true when the request was one of the public GET routes (and answers it). */
 export function handlePublicRequest(

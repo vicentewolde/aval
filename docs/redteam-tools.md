@@ -2,10 +2,10 @@
 
 Deterministic attacks on the gateway itself: who can tell what exists, how much a caller may ask, how
 identities are forged, what a hostile seller can plant, and whether the audit trail survives. No model and
-no spend; the same 75 checks run in the test suite (`test/redteam-tools.test.ts`). Regenerate with
+no spend; the same 101 checks run in the test suite (`test/redteam-tools.test.ts`). Regenerate with
 `node scripts/redteam-tools.ts`.
 
-**Result: 75 of 75 attacks failed to get through.**
+**Result: 101 of 101 attacks failed to get through.**
 
 | Category | Checks | Passed |
 |---|---|---|
@@ -16,6 +16,7 @@ no spend; the same 75 checks run in the test suite (`test/redteam-tools.test.ts`
 | hostile seller | 10 | 10 |
 | hostile caller | 2 | 2 |
 | audit | 3 | 3 |
+| web | 26 | 26 |
 | negotiation | 36 | 36 |
 
 ## existence
@@ -77,6 +78,35 @@ no spend; the same 75 checks run in the test suite (`test/redteam-tools.test.ts`
 - PASS the audit chain is intact after 430 entries of attacks
 - PASS two gateways writing to one log do not fork the chain
 - PASS editing one line of the log is detected _(line 4 had nothing to change)_
+
+## web
+
+- PASS the showroom of a seller that serves only identified agents is indistinguishable from a missing listing
+- PASS its video is not served to anonymous callers
+- PASS its ask endpoint answers nothing
+- PASS its lead endpoint takes nothing
+- PASS a listing without publicMedia does not serve its video
+- PASS path traversal /l/demo-1/evidence/..%2f..%2fsecret.txt reads nothing
+- PASS path traversal /l/demo-1/evidence/%2e%2e/c1.jpg reads nothing
+- PASS path traversal /l/demo-1/evidence/..%5c..%5csecret.txt reads nothing
+- PASS path traversal /l/demo-1/media/../../secret.txt reads nothing
+- PASS range "bytes=5000-6000" is refused, not served
+- PASS range "bytes=9-3" is refused, not served
+- PASS range "bytes=-" is refused, not served
+- PASS a cross-site post to the ask endpoint is refused
+- PASS a cross-site post to the lead endpoint is refused
+- PASS a form-encoded post (the classic cross-site form) is refused
+- PASS an oversized body is refused
+- PASS a lead without consent is refused
+- PASS a script in the search box is escaped, not reflected
+- PASS a hostile search request reveals no address, floor or hidden listing
+- PASS the showroom allows only its own hashed script (no unsafe-inline scripts, no remote origins)
+- PASS the showroom's script cannot be changed without breaking its hash
+- PASS a lead carrying a script is accepted as plain data
+- PASS control characters are stripped before a lead is stored
+- PASS a lead is never rendered on a public page
+- PASS personal data never reaches the audit log
+- PASS flooding the lead form is cut off
 
 ## negotiation
 

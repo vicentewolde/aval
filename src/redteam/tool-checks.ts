@@ -13,6 +13,7 @@ import { OfflineAnswerModel } from "../gateway/offline-model.ts";
 import { startGateway } from "../gateway/server.ts";
 import { Store } from "../store.ts";
 import { runNegotiationChecks } from "./negotiation-checks.ts";
+import { runWebChecks } from "./web-checks.ts";
 
 export interface CheckResult {
   category: string;
@@ -380,6 +381,7 @@ export async function runToolChecks(): Promise<CheckResult[]> {
       orig === mod || !verifyChain(copy).ok,
       orig === mod ? "line 4 had nothing to change" : `broken at ${verifyChain(copy).brokenAt}`,
     );
+    results.push(...(await runWebChecks(base, store)));
   } finally {
     http.close();
   }

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Listing } from "../claims/schema.ts";
+import { stripAccents } from "../extract/spanish.ts";
 import type { Caller, VisibleFact } from "./policy.ts";
 import { visibleFacts } from "./policy.ts";
 
@@ -130,7 +131,11 @@ function evaluate(listing: Listing, facts: VisibleFact[], c: Criteria): Criterio
     const commune = f ? f.statement.replace(/^Located in /, "").toLowerCase() : null;
     hard(
       `commune: ${c.commune}`,
-      commune === null ? "unconfirmed" : commune === c.commune.toLowerCase() ? "met" : "not_met",
+      commune === null
+        ? "unconfirmed"
+        : stripAccents(commune) === stripAccents(c.commune.toLowerCase())
+          ? "met"
+          : "not_met",
       f,
     );
   }

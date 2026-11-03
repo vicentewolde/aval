@@ -94,6 +94,8 @@ export const PolicySchema = z.object({
   /** Unidentified agents may read verified facts but cannot request visits. */
   allowAnonymousAgents: z.boolean(),
   maxQuestionsPerHour: z.number().int().positive(),
+  /** true = the walkthrough video and its evidence frames may be shown on the public showroom page (default: no). */
+  publicMedia: z.boolean().optional(),
 });
 export type Policy = z.infer<typeof PolicySchema>;
 
