@@ -187,6 +187,23 @@ The Meta Model API has no hard spending cap (only alerts), so Aval enforces its 
 is checked against `AVAL_BUDGET_USD` (default 30) before it is sent, and the real cost is appended to
 `.aval/spend.jsonl` afterwards. Tests never call the real API.
 
+## The demo video, built from the product
+
+`node scripts/video/make-video.ts` (or `pnpm video`) builds a prototype of the demo video from the running platform:
+the narration is read from the shot-list table of `docs/demo-script.md`, the voice is ElevenLabs, every picture is
+captured from the live pages and commands (the search, the showroom with its SAM boxes, the title review, the
+negotiation, the passport, the attack battery), and the captions are burned in and also written as an `.srt`.
+Output: `out/video/aval-prototype.mp4` and `aval-prototype.srt` (not committed).
+
+- **Voice:** put `ELEVENLABS_API_KEY` in `.env` (never in a chat or a commit), and optionally `ELEVENLABS_VOICE_ID` and
+  `ELEVENLABS_MODEL_ID`. Without a key the macOS voice is used as a stand-in. The ElevenLabs request asks for
+  character timestamps so captions follow the voice; that client is covered by tests with mocked responses and has
+  not been exercised against the live API.
+- **Cost:** about 2,300 characters of narration per run (audio is cached per scene, so changing the voice or one
+  scene re-synthesizes only what changed; `--force` redoes all) plus about $0.03 of Muse Spark for the search and the
+  Spanish answer; `--offline` spends nothing.
+- **Needs:** Google Chrome, ffmpeg and pdftoppm. Chrome is driven over the DevTools protocol with no extra dependency.
+
 ## Develop
 
 ```bash

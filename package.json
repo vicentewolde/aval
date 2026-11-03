@@ -14,7 +14,8 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "video": "node scripts/video/make-video.ts"
   },
   "dependencies": {
     "@meta-sam/parser": "^0.1.0",
