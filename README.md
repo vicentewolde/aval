@@ -15,7 +15,7 @@ Muse Spark + SAM 3.1 + Muse Voice Transcribe).
 > **Built and tested:** video evidence (Muse Spark + SAM 3.1), voice notes (Muse Voice Transcribe),
 > signed-agent MCP gateway, search across listings, public pages with schema.org data, a buyer agent
 > on Muse Spark function calling, a signed Listing Passport, agent-to-agent negotiation under signed
-> mandates, a title-document review with page-level evidence, and two red-teams. **Not built (roadmap):** a hosted marketplace,
+> mandates, a title-document review with page-level evidence, a buyer search and showroom with consented lead capture, and two red-teams. **Not built (roadmap):** a hosted marketplace,
 > buyer matching at scale, land for developers.
 
 ## The rule
@@ -78,6 +78,24 @@ dining tables, as a real flat would not). The Spanish voice note is synthetic (m
 | Negotiate | the buyer's agent and the seller's agent trade offers **inside mandates their humans signed**; limits stay secret, the engine rejects anything outside authority, and prose cannot carry numbers | [docs/buyer-demo.md](docs/buyer-demo.md#scenario-g-two-agents-negotiate-each-inside-what-its-human-signed) |
 | Close the loop with humans | the result is a non-binding term sheet that needs two signatures from the principals; then a lawyer and a notary | `negotiation approve` |
 
+## For the buyer: search, showroom, contact
+
+The same registry has a human side (`node src/cli.ts serve`, then `/search`):
+
+- **Search in your own words** (`/search`): "depto para comprar en Ñuñoa, acepta perro, hasta 6 mil UF, con tina".
+  Muse Spark only translates the words into filters (it never sees the listings, so a hostile request has
+  nothing to extract; a free rules parser takes over, and says so, if the model is unavailable). The ranking
+  is the same deterministic engine the agents use: every criterion shows the fact it rests on and its
+  provenance, and no evidence reads *unconfirmed*, never met or missed.
+- **Showroom** (`/l/<id>/showroom`): the walkthrough with a chapter for every verified fact (click one and the
+  video jumps to the moment SAM found it), the status of the sale documents, "your search vs this home",
+  and questions about the home. The video is shown only if the seller's policy sets `publicMedia`.
+  Answers are verified in English; a question in Spanish gets a translation of the verified answer next to
+  the verified wording, and the translation is dropped if a single number differs.
+- **Contact** (a form with an explicit consent box): the broker gets a lead (`node src/cli.ts leads`) that says
+  how well the home fits what the buyer searched for. Personal data never goes into the audit log or any
+  public page, and a buyer can be deleted with `leads delete`.
+
 ## Search across listings (the seed of a marketplace for agents)
 
 `search_listings` takes a buyer's structured needs (operation, commune, bedrooms, pets, budget, must-have
@@ -117,7 +135,7 @@ matches the one inline script, and register a `get_listing_facts` tool through W
 
 Benign questions are still answered (0 / 6 missed). A second battery attacks everything around the
 model without any model (who can tell what exists, scraping, forged identities, hostile sellers,
-hostile callers, the audit chain, plus forged mandates, smuggled limits and a hijacked seller agent): **75 / 75 attacks blocked**, mutation-tested, in
+hostile callers, the audit chain, forged mandates, smuggled limits, a hijacked seller agent, and the buyer pages: stolen files, cross-site posts, planted scripts, personal data in logs): **101 / 101 attacks blocked**, mutation-tested, in
 [docs/redteam-tools.md](docs/redteam-tools.md). Both red-teams found real holes in the first versions
 (an existence oracle, a symmetric price range, seller text planted as facts, a model asserting
 "no"...); all are fixed and the history shows when. Details, every attack and the honest limits:

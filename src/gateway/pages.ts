@@ -230,7 +230,7 @@ export function renderListingPage(
 <link rel="alternate" type="application/json" href="/l/${esc(listing.id)}.json"><link rel="canonical" href="${esc(url)}">
 <style>${STYLE}</style>
 <script type="application/ld+json">${jsonForScript(listingJsonLd(listing, facts, url))}</script></head><body>
-<p class="m"><a href="/listings">All listings</a></p>
+<p class="m"><a href="/listings">All listings</a> · <a href="/l/${esc(listing.id)}/showroom">Open the showroom</a> · <a href="/search">Search</a></p>
 <h1>${esc(listing.declared.title)}</h1>
 <p class="m">${esc(listing.declared.commune)} · ${listing.declared.operation === "sale" ? "for sale" : "for rent"} · <code>${esc(listing.id)}</code></p>
 <div class="box"><b>What the seller's rules mean for you</b><ul>${policyLines(listing)
@@ -249,12 +249,13 @@ export function renderIndex(listings: Listing[], baseUrl: string): string {
     .filter((x): x is { l: Listing; facts: VisibleFact[] } => x.facts !== null)
     .map(
       ({ l, facts }) =>
-        `<li><a href="/l/${esc(l.id)}">${esc(l.declared.title)}</a> <span class="m">${esc(l.declared.commune)} · ${l.declared.operation} · ${facts.length} facts</span></li>`,
+        `<li><a href="/l/${esc(l.id)}">${esc(l.declared.title)}</a> <span class="m">${esc(l.declared.commune)} · ${l.declared.operation} · ${facts.length} facts · <a href="/l/${esc(l.id)}/showroom">showroom</a></span></li>`,
     )
     .join("");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Aval · listings agents can believe</title>
 <link rel="alternate" type="application/json" href="/listings.json"><style>${STYLE}</style></head><body>
 <h1>Aval</h1><p>Listings whose facts carry their proof. Only what is verified, said by the broker, or declared is shown, and each fact says which.</p>
+<p><a href="/search"><b>Find a home →</b></a> <span class="m">describe what you want, in Spanish or English</span></p>
 <ul>${items}</ul><p class="m">Agents: <a href="/.well-known/aval.json">discovery</a> · <a href="/listings.json">listings.json</a> · MCP at <code>${esc(baseUrl)}/mcp</code></p></body></html>`;
 }
 
