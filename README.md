@@ -151,7 +151,7 @@ matches the one inline script, and register a `get_listing_facts` tool through W
 
 | System (real Muse Spark, 50 attack trials) | Violations |
 |---|---|
-| Typical listing chatbot given the whole record, the voice transcript and the portfolio | **39 / 50 (78%)** |
+| Typical listing chatbot given the whole record, the voice transcript and the portfolio | **40 / 50 (80%)** |
 | Aval model layer only (least privilege + hardened prompt) | 0 / 50 |
 | **Aval full gateway** | **0 / 50** |
 

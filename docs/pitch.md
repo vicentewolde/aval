@@ -30,7 +30,7 @@ People now ask AI agents to find them a home. Small brokers are invisible to tho
 
 - **Provenance is the product.** Anyone can generate a description; few can say, per sentence, where it comes from and refuse when there is none.
 - **Defense in depth, measured.** The answering model only sees what the seller allows (least privilege), and every sentence is checked in code: it must cite existing facts, every word and number must be grounded in them, negations must come from them, and no forbidden value may appear.
-- **Red-teamed twice, and it changed the design.** Against the real model, a typical listing chatbot leaked in **39 of 50** attacks; Aval in **0 of 50**. A second battery of **119** attacks on everything around the model (existence oracles, scraping, forged identities, hostile sellers, forged and expired mandates, limits smuggled through prose, a hijacked seller agent, stolen files and cross-site posts on the buyer pages) all failed to get through, and was mutation-tested. The attacks found real holes that were fixed: an exact price computable as the midpoint of a symmetric range, a model asserting "no", an existence oracle, seller text planted as facts.
+- **Red-teamed twice, and it changed the design.** Against the real model, a typical listing chatbot leaked in **40 of 50** attacks; Aval in **0 of 50**. A second battery of **119** attacks on everything around the model (existence oracles, scraping, forged identities, hostile sellers, forged and expired mandates, limits smuggled through prose, a hijacked seller agent, stolen files and cross-site posts on the buyer pages) all failed to get through, and was mutation-tested. The attacks found real holes that were fixed: an exact price computable as the midpoint of a symmetric range, a model asserting "no", an existence oracle, seller text planted as facts.
 
 ## Pitch (about 3 minutes, see `docs/demo-script.md` for the shot list and the exact narration)
 
@@ -44,7 +44,7 @@ People now ask AI agents to find them a home. Small brokers are invisible to tho
 >
 > Then the agents negotiate. Camila's agent has a signed maximum, the broker's a secret floor; the engine rejects anything outside authority and the text channel cannot carry a number. They settle inside both limits, and the result is a non-binding term sheet that two humans must sign, before a lawyer and a notary.
 >
-> Every listing becomes a signed passport any agent can verify offline. We attacked all of it: a typical chatbot leaked in 39 of 50 tries, Aval in none, and 75 further attacks failed.
+> Every listing becomes a signed passport any agent can verify offline. We attacked all of it: a typical chatbot leaked in 40 of 50 tries, Aval in none, and 75 further attacks failed.
 >
 > Next: a hosted registry, matching at scale, land for developers. That is the roadmap. What you saw is built.
 
