@@ -36,6 +36,14 @@ Narration is about 388 words (about 2:35 spoken, the rest is pauses and on-scree
 - Negotiation on the real model (Muse Spark on both sides), run three times: agreed UF 4,990, 5,010 and (offline seller) 4,923; always inside the seller's floor (4,900) and the buyer's maximum (5,100).
 - 276 automated tests, none of which calls the real API.
 
+## Recording by hand and putting the generated voice on top
+
+The narration above is synthesized (ElevenLabs) and the captions are generated, so a take only has to show the
+screen. `node scripts/video/make-cues.ts` builds `out/live/cues.html` with a card per scene (the narration, the target
+time, the steps and the commands, a timer and a button that plays that scene's voice). Save each take as
+`out/live/scene-N.mov` and run `node scripts/video/make-video.ts --live out/live`. Scenes 1, 7 and 8 (the cards and
+the attack numbers) are generated and need no take.
+
 ## What to record, in order (commands from `~/dev/aval`)
 
 Prep (once): `cd ~/dev/aval && git pull`, terminal font 20pt+, hide notifications. **Use the dark theme for the whole video** (the opening card is dark): open every page with `?theme=dark`, and set the terminal to a dark profile. Browser window about 1360x860, zoom 100%.

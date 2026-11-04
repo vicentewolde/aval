@@ -25,6 +25,7 @@ import { runToolChecks } from "../../src/redteam/tool-checks.ts";
 import { ansiToHtml, stripAnsi } from "../../src/video/ansi.ts";
 import { Chrome, type Page } from "../../src/video/cdp.ts";
 import { parseNarration, type Scene } from "../../src/video/narration.ts";
+import { retime } from "../../src/video/retime.ts";
 import {
   captionPage,
   documentPage,
@@ -51,10 +52,12 @@ const { values } = parseArgs({
     tts: { type: "string", default: "auto" },
     voice: { type: "string", default: "Samantha" },
     scenes: { type: "string" },
+    live: { type: "string" },
   },
 });
 
 const OUT = "out/video";
+const NAME = values.live ? "aval-final" : "aval-prototype";
 const FPS = 8; // capture rate of animated sequences; the final video is 30 fps
 const W = 1440;
 const H = 810;
@@ -659,6 +662,70 @@ function buildScene(index: number, segs: Segment[], total: number): string {
   return joined;
 }
 
+/** The take a person recorded for a scene, if there is one (scene-N.mov / .mp4 / .m4v in the live folder). */
+function liveTake(index: number): string | null {
+  if (!values.live || !existsSync(values.live)) return null;
+  const f = readdirSync(values.live).find((x) =>
+    new RegExp(`^scene-${index + 1}\\.(mov|mp4|m4v)$`, "i").test(x),
+  );
+  return f ? join(values.live, f) : null;
+}
+
+/** Fits a recorded take to the scene's slot (speed, hold, cut), at 1920x1080 and without its own sound. */
+function buildLiveScene(index: number, file: string, total: number): string {
+  const recorded = Number(
+    execFileSync("ffprobe", [
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration",
+      "-of",
+      "csv=p=0",
+      file,
+    ])
+      .toString()
+      .trim(),
+  );
+  const r = retime(recorded, total);
+  log(
+    `scene ${index + 1}: your take is ${recorded.toFixed(1)} s for a ${total.toFixed(1)} s slot${r.warning ? ` (${r.warning})` : ""}`,
+  );
+  const dir = join(OUT, "segs");
+  mkdirSync(dir, { recursive: true });
+  const out = join(dir, `scene-${index}.mp4`);
+  const vf = [
+    `setpts=${r.factor.toFixed(5)}*PTS`,
+    "fps=30",
+    "scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos",
+    "pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0x0a110e",
+    ...(r.pad > 0 ? [`tpad=stop_mode=clone:stop_duration=${r.pad.toFixed(3)}`] : []),
+    `fade=t=in:st=0:d=0.25`,
+    `fade=t=out:st=${(total - 0.3).toFixed(2)}:d=0.3`,
+    "format=yuv420p",
+  ].join(",");
+  ffmpeg([
+    "-i",
+    file,
+    "-an",
+    "-vf",
+    vf,
+    "-t",
+    total.toFixed(3),
+    "-c:v",
+    "libx264",
+    "-preset",
+    "veryfast",
+    "-crf",
+    "17",
+    "-pix_fmt",
+    "yuv420p",
+    "-r",
+    "30",
+    out,
+  ]);
+  return out;
+}
+
 const NOTES: Record<number, string> = {
   1: "Stock footage, invented listing",
   2: "Invented documents. Not legal advice.",
@@ -798,7 +865,12 @@ try {
   const sceneFiles: string[] = [];
   for (let i = 0; i < makers.length; i++) {
     const reuse = join(OUT, "segs", `scene-${i}.mp4`);
-    if (only && !only.has(i + 1) && existsSync(reuse)) {
+    const take = liveTake(i);
+    if (take) {
+      sceneFiles.push(buildLiveScene(i, take, durs[i] as number));
+      continue;
+    }
+    if ((only && !only.has(i + 1) && existsSync(reuse)) || (values.live && existsSync(reuse))) {
       log(`scene ${i + 1}: reusing the previous capture`);
       sceneFiles.push(reuse);
       continue;
@@ -809,7 +881,7 @@ try {
   }
   log("captions");
   const cap = await renderCaptions(ctx.slide, scenes, starts, durs, spoken);
-  writeFileSync(join(OUT, "aval-prototype.srt"), toSrt(cap.cues));
+  writeFileSync(join(OUT, `${NAME}.srt`), toSrt(cap.cues));
   log("assembling");
   const list = join(OUT, "segs", "all.txt");
   writeFileSync(list, sceneFiles.map((f) => `file '${join(process.cwd(), f)}'`).join("\n"));
@@ -844,11 +916,11 @@ try {
     "-movflags",
     "+faststart",
     "-shortest",
-    join(OUT, "aval-prototype.mp4"),
+    join(OUT, `${NAME}.mp4`),
   ]);
   const total = durs.reduce((a, b) => a + b, 0);
   log(
-    `done: ${join(OUT, "aval-prototype.mp4")} (${Math.floor(total / 60)}:${String(Math.round(total % 60)).padStart(2, "0")}), subtitles ${join(OUT, "aval-prototype.srt")}`,
+    `done: ${join(OUT, `${NAME}.mp4`)} (${Math.floor(total / 60)}:${String(Math.round(total % 60)).padStart(2, "0")}), subtitles ${join(OUT, `${NAME}.srt`)}`,
   );
 } finally {
   await chrome.close();

@@ -202,6 +202,13 @@ Output: `out/video/aval-prototype.mp4` and `aval-prototype.srt` (not committed).
 - **Cost:** about 2,300 characters of narration per run (audio is cached per scene, so changing the voice or one
   scene re-synthesizes only what changed; `--force` redoes all) plus about $0.03 of Muse Spark for the search and the
   Spanish answer; `--offline` spends nothing.
+- **Recording by hand, with the same voice and captions:** `node scripts/video/make-cues.ts` writes
+  `out/live/cues.html`, a guide with each scene's narration, target length, steps and commands (and a timer). Record
+  each scene as its own take, save it as `out/live/scene-N.mov`, and run
+  `node scripts/video/make-video.ts --live out/live`: every scene with a take uses it (fitted to the narration: sped
+  up, slowed a little, or its last frame held), every other scene keeps the generated one, and the voice and
+  captions go on top (`out/video/aval-final.mp4`). `node scripts/video/demo-state.ts blocked|attention|reset` sets
+  the demo data a scene needs.
 - **Needs:** Google Chrome, ffmpeg and pdftoppm. Chrome is driven over the DevTools protocol with no extra dependency.
 
 ## Develop
